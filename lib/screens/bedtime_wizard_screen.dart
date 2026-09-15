@@ -17,6 +17,7 @@ import '../models/local/hero_profile_local.dart';
 import '../providers/hero_profile_provider.dart';
 import '../providers/hero_saga_provider.dart';
 import '../theme/age_band_theme.dart';
+import 'bedtime_tap_gate.dart';
 import 'wizard_steps/superhero_entry_screen.dart' show SuperheroEntryScreen;
 import 'wizard_steps/wizard_data_mapper.dart';
 
@@ -153,9 +154,10 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
   // Tap-to-choose fallback: choice chips shown alongside each question so the
   // flow still works when the mic is unavailable (web/desktop/denied
   // permission) or a child prefers tapping. A tap resolves the same await
-  // that speech does.
+  // that speech does. The gate is armed the moment the chips appear, so a
+  // tap made while the question is still being narrated counts (MT-430).
   List<String> _choiceOptions = [];
-  Completer<String>? _tapCompleter;
+  final BedtimeTapGate _tapGate = BedtimeTapGate();
 
   // PERF-04: backend task id of the in-flight generation. dispose() cancels the
   // worker if the user leaves before the story is ready. Nulled once the story
@@ -620,9 +622,8 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
               'Breathe in… slow…');
       await Future.delayed(const Duration(seconds: 4));
       if (_timerExpired || !mounted) return;
-      await _speak(_isMature
-          ? '…and slowly out.'
-          : '…and let it out… slow and soft…');
+      await _speak(
+          _isMature ? '…and slowly out.' : '…and let it out… slow and soft…');
       await Future.delayed(const Duration(seconds: 6));
     } catch (_) {
       // Never let the breath block the story.
@@ -643,6 +644,11 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     if (mounted && options.isNotEmpty) {
       setState(() => _choiceOptions = options);
     }
+    // Accept taps from the moment the chips are on screen, not only once the
+    // question has finished narrating — young children tap immediately, and
+    // a tap during narration used to be echoed and then thrown away.
+    _tapGate.reset();
+    _tapGate.arm();
     await _speak(question);
 
     String answer = '';
@@ -663,32 +669,30 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
           _isYoung ? "I'll surprise you!" : "I'll pick something good.");
     }
     if (mounted) setState(() => _choiceOptions = []);
+    _tapGate.reset();
     return answer;
   }
 
-  /// Races speech recognition against a chip tap; first answer wins.
+  /// Races speech recognition against a chip tap; first answer wins. A tap
+  /// that already landed during narration wins outright — the mic never opens.
   Future<String> _listenOrTap() async {
-    _tapCompleter = Completer<String>();
-    final answer = await Future.any([_listen(), _tapCompleter!.future]);
-    _tapCompleter = null;
+    if (_tapGate.hasAnswer) return _tapGate.answer;
+    final answer = await Future.any([_listen(), _tapGate.answer]);
     // If the tap won, _listen is still running — stop it so its onResult
-    // can't overwrite the chosen answer's status text.
+    // can't overwrite the chosen answer's status text. If the mic timed out
+    // instead, the gate stays open so a tap during the retry prompt counts.
     await _speech.stop();
     if (mounted) setState(() => _isListening = false);
     return answer;
   }
 
-  Future<String> _waitForTap(Duration timeout) async {
-    _tapCompleter = Completer<String>();
-    final answer =
-        await _tapCompleter!.future.timeout(timeout, onTimeout: () => '');
-    _tapCompleter = null;
-    return answer;
-  }
+  Future<String> _waitForTap(Duration timeout) =>
+      _tapGate.answer.timeout(timeout, onTimeout: () => '');
 
   void _onChipTap(String option) {
-    final c = _tapCompleter;
-    if (c != null && !c.isCompleted) c.complete(option);
+    // Only echo a tap that is actually being honoured. Echoing one that was
+    // about to be dropped was the visible half of MT-430.
+    if (!_tapGate.offer(option)) return;
     if (mounted) setState(() => _statusText = '"$option"');
   }
 
