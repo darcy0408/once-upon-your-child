@@ -47,6 +47,13 @@ class InteractiveAdventurePromptBuilder:
         "8-10": {
             "sentence_length": "varied (6-15 words), richer detail",
             "vocabulary": "vivid and engaging, richer detail (think Magic Tree House)",
+            # MT-418 (2026-09-14): an Explorer-band (age 8) adventure came back
+            # with "shivers like a hidden pocket waiting to breathe", "bravery
+            # settles like a scarf around your shoulders", "a seam in the
+            # wallpaper", "beckoning". Stories are read aloud, so the target is
+            # what an 8-year-old can follow by ear. This band had no avoid-list
+            # at all before; the younger bands did.
+            "vocabulary_avoid": "Written to be read ALOUD to a child of 8-10: one idea per sentence, and say what the hero can see, hear, touch, or do. Compare things only to what a child has held or done (a wet sock, a stuck zipper), never to a feeling or an idea. NO: beckoning, nestled, motes, parchment, luminous, tendrils, murmur, unfurl, seam, cascading, hush, settles, lingers, shimmering. YES: waving you over, tucked in, dust, paper, glowing, thin vines, whisper, open up, crack, pouring, quiet, sits, stays, sparkling",
             "word_count_ranges": {
                 "short": (900, 1200),
                 "medium": (1200, 1800),
@@ -234,7 +241,7 @@ SAFETY RULES:
 - No sexual content, no graphic violence, no self-harm, no illegal wrongdoing.
 - Handle sensitive emotions with care. Keep the tone warm, age-appropriate, and full of wonder.
 - Do NOT invent characters or family members not provided.
-- Must Include: A Moment of Wonder (age-appropriate), a coping moment in action (resilience/perspective), and a satisfying conclusion.
+- Somewhere in the adventure the hero stops and stares at something amazing; the hero gets through one hard moment by doing something, not by being told what to do; and the story ends properly, with nothing left hanging.
 - SAFETY: Ensure no scary imagery or abandonment themes for children.
 - Do NOT repeat or closely paraphrase the opening paragraph at the end of the story.
 """
@@ -591,7 +598,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 {mood_rules}
 
 **WRITING** ({word_count[0]}-{word_count[1]} words per segment): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
-{f"**VOCABULARY FOR AGE {age}**: {age_config.get('vocabulary_avoid', '')}" if age <= 7 else ""}
+{f"**VOCABULARY FOR AGE {age}**: {age_config['vocabulary_avoid']}" if age_config.get('vocabulary_avoid') else ""}
 
 **OUTPUT TYPE**: REQUIRED: output_type='CHOICE'. This is a Pick-A-Path adventure - every segment MUST present exactly {choice_count} distinct, meaningful choices.
 
@@ -825,7 +832,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 {story_so_far or "No summary available."}
 
 **WRITING** ({word_count[0]}-{word_count[1]} words per segment): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
-{f"**VOCABULARY FOR AGE {age}**: {age_config.get('vocabulary_avoid', '')}" if age <= 7 else ""}
+{f"**VOCABULARY FOR AGE {age}**: {age_config['vocabulary_avoid']}" if age_config.get('vocabulary_avoid') else ""}
 
 **CRITICAL RULES**:
 - **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
