@@ -710,7 +710,13 @@ class HeroStoryTypePage extends StatelessWidget {
                         child: ImageModeOrb(
                           modeType: 'reading',
                           label: _getReadingLabel(band.band),
-                          subtitle: 'Chapter-style reading',
+                          // Both bands that see this orb (Sprout, Explorer)
+                          // get Dr-Seuss-style couplets, one line per page,
+                          // in the read-along layout — not chapter prose.
+                          // Half-width orb, 10px, maxLines 1: anything past
+                          // ~20 characters ellipsises at 360px once the orb
+                          // is selected (it scales up slightly).
+                          subtitle: 'Read-along rhymes',
                           isActive: selectedMode == 'reading',
                           onTap: () {
                             setStoryMode('reading');
