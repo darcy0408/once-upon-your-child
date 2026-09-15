@@ -37,8 +37,9 @@ void showBedtimeLaunchSheet(
       Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ??
           ageBandFromAge(childAge).isMature;
   final dialogTitle = isMature ? 'Voice Story Settings' : 'Bedtime Settings';
-  final interactiveTitle =
-      isMature ? 'Interactive Voice Adventure' : 'Interactive Bedtime Adventure';
+  final interactiveTitle = isMature
+      ? 'Interactive Voice Adventure'
+      : 'Interactive Bedtime Adventure';
   final interactiveSubtitle = isMature
       ? 'Voice-led pick-a-path story.'
       : 'Voice-led pick-a-path bedtime story.';
@@ -71,15 +72,16 @@ void showBedtimeLaunchSheet(
                 if (replayStory != null) ...[
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading:
-                        const Icon(Icons.replay_rounded, color: Color(0xFFFFD700)),
+                    leading: const Icon(Icons.replay_rounded,
+                        color: Color(0xFFFFD700)),
                     title: const Text(
                       "Play Last Night's Story Again",
                       style: TextStyle(color: Colors.white),
                     ),
                     subtitle: Text(
                       replayStory.title,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -126,6 +128,12 @@ void showBedtimeLaunchSheet(
                   inactiveColor: Colors.white24,
                   label:
                       timerMinutes == 0 ? 'Off' : '${timerMinutes.round()} min',
+                  // MT-434(a): without this the accessibility tree reports
+                  // the slider as a bare percentage, so a screen-reader
+                  // parent heard "50" while the screen said the timer was
+                  // off. Speak the same words the label shows.
+                  semanticFormatterCallback: (v) =>
+                      v == 0 ? 'Off' : '${v.round()} minutes',
                   onChanged: (val) => setDialogState(() => timerMinutes = val),
                 ),
                 Text(
