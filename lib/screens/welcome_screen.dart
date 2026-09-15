@@ -9,6 +9,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 
 import '../providers/age_band_provider.dart';
 import '../services/app_tts_service.dart';
+import '../services/child_profile_service.dart';
 import '../services/parental_consent_service.dart';
 import '../services/privacy_service.dart';
 import '../theme/age_band_theme.dart';
@@ -155,7 +156,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     }
     if (!teaserSeen) {
       setState(() => _step = -1);
-      unawaited(_speak("Welcome to Once Upon YOUR Child! Where you are the hero.",
+      unawaited(_speak(
+          "Welcome to Once Upon YOUR Child! Where you are the hero.",
           rateScale: 0.8));
       return;
     }
@@ -978,6 +980,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_kUserNameKey, name);
         // Offer parent controls setup before the child starts playing.
+        // MT-433: the "help with…" section in Parent Controls is tied to a
+        // hero profile, and a fresh install has none yet, so "Set up now"
+        // landed the parent on a disabled control that told them to create a
+        // character first. Only offer the shortcut when a profile exists;
+        // otherwise say where the setting lives and move on.
+        final hasProfile =
+            (await ChildProfileService().loadProfiles()).isNotEmpty;
         if (mounted) {
           final setupNow = await showDialog<bool>(
             context: context,
@@ -993,15 +1002,18 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                 'Is there something your child could use a little help with '
                 'right now? Struggling with \'no\', bedtime worry, sibling moments?\n\n'
                 'Pick what\'s been tough and stories will quietly work on it. '
-                'Your child will never see these choices.',
+                'Your child will never see these choices.'
+                '${hasProfile ? '' : '\n\nYou\'ll find this under Parent '
+                    'Controls once your child\'s first hero is made.'}',
                 style: const TextStyle(color: Colors.white70, height: 1.5),
               ),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Maybe later',
-                      style: TextStyle(color: Colors.white54)),
-                ),
+                if (hasProfile)
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Maybe later',
+                        style: TextStyle(color: Colors.white54)),
+                  ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _goldColor,
@@ -1009,8 +1021,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Set up now'),
+                  onPressed: () => Navigator.pop(ctx, hasProfile),
+                  child: Text(hasProfile ? 'Set up now' : 'Got it'),
                 ),
               ],
             ),
@@ -1096,9 +1108,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-              'Couldn\'t save right now. Please check your connection and '
-              'tap your age again.'),
+          content:
+              Text('Couldn\'t save right now. Please check your connection and '
+                  'tap your age again.'),
           backgroundColor: AppColors.error,
         ),
       );
