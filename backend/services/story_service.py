@@ -1837,6 +1837,29 @@ def _strip_companion_beat_labels(content: str) -> str:
     return _COMPANION_BEAT_LABEL_PATTERN.sub("", content)
 
 
+# "A moment of wonder: You look up and..." — the interactive builder's old
+# safety line "Must Include: A Moment of Wonder (...), a coping moment in
+# action (...)" was transcribed into an Explorer-band segment as an inline
+# caption (owner screenshot, 2026-09-13, MT-418). The prompt line has been
+# rewritten in plain words; this nets the stragglers. The colon/dash right
+# after the phrase keeps an ordinary "a moment of wonder washed over you"
+# untouched — only the caption form is excised.
+_PROMPT_HEADING_LABEL_PATTERN = re.compile(
+    r"(?:^|(?<=[.!?]\s)|(?<=\n))(?:[Aa] )?(?:[Mm]oment of [Ww]onder|[Cc]oping [Mm]oment)\s*[:—–-]\s*"
+)
+
+
+def _strip_prompt_heading_labels(content: str) -> str:
+    """Excise prompt-heading captions the model copied into segment prose.
+
+    "A moment of wonder: You look up." -> "You look up."
+    Only the caption is removed; the sentence it introduced survives.
+    """
+    if not content:
+        return content
+    return _PROMPT_HEADING_LABEL_PATTERN.sub("", content)
+
+
 # Regex patterns for lesson-summary endings that break story immersion.
 # Applied only to the last sentence of the last non-empty page.
 _LESSON_ENDING_PATTERNS = re.compile(

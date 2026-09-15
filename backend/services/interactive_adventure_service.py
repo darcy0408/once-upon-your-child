@@ -28,6 +28,7 @@ from backend.services.story_service import (
     _strip_companion_beat_labels,
     _strip_lesson_endings,
     _strip_meta_leakage,
+    _strip_prompt_heading_labels,
     pseudonymize_hero_name,
     restore_hero_name,
 )
@@ -699,6 +700,7 @@ class InteractiveAdventureService:
         content = segment_data.get("content")
         if isinstance(content, str) and content.strip():
             content = _strip_companion_beat_labels(content)
+            content = _strip_prompt_heading_labels(content)
             pages = _strip_meta_leakage([content])
             if segment_data.get("is_ending"):
                 pages = _strip_lesson_endings(pages)
