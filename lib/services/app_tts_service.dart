@@ -234,10 +234,10 @@ class AppTtsService {
     // time-bounded — a slow or failed sync must never wedge TTS.
     _authReady = ApiServiceManager.authHeaders()
         .then(
-          (_) => ParentalConsentService()
-              .syncStoredAgeToBackend()
-              .timeout(const Duration(seconds: 10)),
-        )
+      (_) => ParentalConsentService()
+          .syncStoredAgeToBackend()
+          .timeout(const Duration(seconds: 10)),
+    )
         .catchError((Object e) {
       debugPrint('TTS init: declared-age back-fill skipped: $e');
     });
@@ -340,6 +340,7 @@ class AppTtsService {
     String text, {
     String? voiceId,
     bool awaitCompletion = false,
+
     /// Rate multiplier relative to the default (0.42). 1.0 = default.
     /// Use ~0.8 for Sprouts band to slow narration for 3–5 year olds.
     double rateScale = 0.85,
@@ -363,10 +364,11 @@ class AppTtsService {
         if (myGen != _speakGen) return;
         // Pass rateScale to ElevenLabs so the actual audio is slower for young
         // children — the fallback device TTS already uses rateScale below.
-        final ttsResult = await TtsApiService.synthesize(
+        final ttsResult = await synthesizeWithOneRetry(
           cleanText,
           voiceId: id,
           speed: rateScale.clamp(0.7, 1.2),
+          stillWanted: () => myGen == _speakGen,
         );
         if (myGen != _speakGen) return;
         mp3 = ttsResult?.audioBytes;
@@ -410,7 +412,8 @@ class AppTtsService {
       // re-kicks the aborted warm-up pass).
       if (myGen != _speakGen) return;
       _consentGatePrewarmPending = true;
-      debugPrint('TTS blocked by ${e.code}; staying silent (no robotic fallback)');
+      debugPrint(
+          'TTS blocked by ${e.code}; staying silent (no robotic fallback)');
       return;
     } on TtsQuotaExceededException catch (e) {
       // Daily synthesis quota spent (429 TTS_QUOTA_EXCEEDED) — won't clear
@@ -454,6 +457,43 @@ class AppTtsService {
       await _fallback.speak(text);
       if (rateScale != 1.0) await _fallback.setSpeechRate(0.42);
     }
+  }
+
+  /// MT-432: pause before the single retry of a narration request that came
+  /// back with no audio.
+  static const Duration narrationRetryDelay = Duration(milliseconds: 700);
+
+  /// One synthesis attempt, retried once after [narrationRetryDelay] if it
+  /// returned no audio (a 503 from the provider chain, or a network blip).
+  ///
+  /// A single transient failure used to switch the narrator to the robotic
+  /// on-device voice for that utterance — observed mid-flow in a bedtime run,
+  /// where a voice change in a dark room is jarring — so the backend gets one
+  /// more chance first. Typed failures (daily quota, rate limit, consent gate,
+  /// monthly cap) are not transient and propagate at once. [stillWanted]
+  /// lets an utterance that was superseded by stop() or a newer speak() skip
+  /// the retry. [attempt] is a test seam standing in for the network call;
+  /// production leaves it null.
+  @visibleForTesting
+  Future<TtsSynthesisResult?> synthesizeWithOneRetry(
+    String text, {
+    required String voiceId,
+    required double speed,
+    bool Function()? stillWanted,
+    Future<TtsSynthesisResult?> Function()? attempt,
+  }) async {
+    final run = attempt ??
+        () => TtsApiService.synthesize(text, voiceId: voiceId, speed: speed);
+    final first = await run();
+    if (first != null && first.audioBytes.isNotEmpty) return first;
+    if (stillWanted != null && !stillWanted()) return first;
+    debugPrint(
+      'TTS returned no audio; retrying once in '
+      '${narrationRetryDelay.inMilliseconds} ms',
+    );
+    await Future<void>.delayed(narrationRetryDelay);
+    if (stillWanted != null && !stillWanted()) return first;
+    return run();
   }
 
   Future<void> stop() async {
