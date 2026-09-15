@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import '../data/companion_data.dart';
 import '../services/app_tts_service.dart';
 import '../services/api_service_manager.dart';
 import '../services/bedtime_replay_service.dart';
@@ -206,6 +207,23 @@ BedtimeStep? bedtimeStepToChange(String answer) {
     'robin',
   ])) {
     return BedtimeStep.companion;
+  }
+  return null;
+}
+
+/// MT-434(c): the catalogue companion a bedtime pick corresponds to, so the
+/// story request carries that companion's description and signature power
+/// under the name the child actually chose. Null when nothing in the
+/// catalogue matches (the request then carries the bare name, as before).
+///
+/// "Shining Puppy" is the catalogue dog; the rest match on the species word
+/// the same way the mapper's own lookup does.
+@visibleForTesting
+String? bedtimeCompanionCatalogueId(String name) {
+  final lower = name.toLowerCase();
+  if (lower.contains('puppy')) return 'dog';
+  for (final c in magicCompanions) {
+    if (lower.contains(c.id)) return c.id;
   }
   return null;
 }
@@ -605,8 +623,9 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
             : ', with ${_listenerNames.join(' and ')}';
         final summary =
             "$_heroName$listenersText and $_companionChoice in $_settingChoice. A $_feelingChoice story for $_storyDurationMinutes minutes.";
+        // MT-434(f): summary already ends in a full stop.
         final answer = await _askQuestion(
-          "Here's your story recipe: $summary. Shall I make it? Say yes, or tell me what to change.",
+          "Here's your story recipe: $summary Shall I make it? Say yes, or tell me what to change.",
           options: const ['Yes!', 'Change it'],
         );
         if (_isAffirmative(answer)) {
@@ -864,8 +883,11 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
   List<String> _companionOptions() {
     switch (_ageBand) {
       case AgeBand.sprout:
-      case AgeBand.explorer:
         return const ['Fluffy Dragon', 'Magic Bunny', 'Moon Owl', 'Star Fox'];
+      case AgeBand.explorer:
+        // MT-434(b): 6-8 had the toddler list. Their own set, all of which
+        // carry catalogue detail (see bedtimeCompanionCatalogueId).
+        return const ['Moon Owl', 'Star Fox', 'Shining Puppy', 'Robin'];
       case AgeBand.adventurer:
       case AgeBand.creator:
       case AgeBand.adolescent:
@@ -910,8 +932,9 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
   String _companionPrompt() {
     switch (_ageBand) {
       case AgeBand.sprout:
-      case AgeBand.explorer:
         return "Who's coming with $_heroName? Fluffy Dragon, Magic Bunny, Moon Owl, Star Fox, or someone else?";
+      case AgeBand.explorer:
+        return "Who's coming with $_heroName? Moon Owl, Star Fox, Shining Puppy, Robin, or someone else?";
       case AgeBand.adventurer:
         return "Who's joining $_heroName? Thunder Wolf, Shadow Panther, Crystal Phoenix, Robin, or someone else?";
       case AgeBand.creator:
@@ -972,8 +995,9 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
   String _defaultCompanion() {
     switch (_ageBand) {
       case AgeBand.sprout:
-      case AgeBand.explorer:
         return 'Fluffy Dragon';
+      case AgeBand.explorer:
+        return 'Star Fox';
       case AgeBand.adventurer:
       case AgeBand.creator:
       case AgeBand.adolescent:
@@ -1141,7 +1165,17 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
   Future<void> _generateAndReadStory() async {
     _wizardData.characterName = _heroName ?? widget.childName;
     _wizardData.characterAge = _effectiveAge;
-    _wizardData.companionNames = [_companionChoice ?? _defaultCompanion()];
+    final companionName = _companionChoice ?? _defaultCompanion();
+    _wizardData.companionNames = [companionName];
+    // MT-434(c): keep the child's chosen name on the wire while attaching
+    // the catalogue companion's description and signature power. Without
+    // this the mapper renamed "Moon Owl" to "a wise owl" in the story, and
+    // sent picks with no catalogue match as a bare name.
+    final catalogueId = bedtimeCompanionCatalogueId(companionName);
+    if (catalogueId != null) {
+      _wizardData.selectedCompanions = [catalogueId];
+      _wizardData.companionCustomNames[catalogueId] = companionName;
+    }
     _wizardData.customElements = '$_feelingChoice story about $_settingChoice';
     _wizardData.storyLength = 'standard';
 
@@ -1189,6 +1223,15 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     // backend layers its calming bedtime overlay on top.
     final continuing = _continueSaga && _saga != null;
     final profile = _heroProfile;
+    // MT-434(e): a long story can take a couple of minutes on a dim screen
+    // with nothing said after the opening line. One spoken reassurance
+    // partway through; cancelled the moment the story arrives.
+    final reassurance = Timer(const Duration(seconds: 45), () {
+      if (!mounted || _timerExpired) return;
+      unawaited(_speak(_isMature
+          ? 'Still writing. Nearly there.'
+          : 'Still making your story. Almost there…'));
+    });
     final result = await ApiServiceManager.generateStory(
         characterName: requestData['character'] ?? 'Hero',
         age: requestData['age'] ?? 5,
@@ -1225,6 +1268,7 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
         onProgress: (status) {
           if (mounted) setState(() => _statusText = status);
         });
+    reassurance.cancel();
     // PERF-04: story text is in hand — nothing left to cancel.
     _activeTaskId = null;
 
@@ -1540,16 +1584,26 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
                       alignment: WrapAlignment.center,
                       children: _choiceOptions
                           .map(
-                            (option) => ActionChip(
-                              label: Text(option),
-                              onPressed: () => _onChipTap(option),
-                              labelStyle: const TextStyle(
-                                color: Color(0xFFE6E1FF),
-                              ),
-                              backgroundColor: const Color(0xFF2A2450),
-                              side: const BorderSide(
-                                color: Color(0xFF7C6FD9),
-                                width: 1,
+                            // MT-434(d): the chip alone is announced as a
+                            // checkbox; it is a one-shot answer, so expose
+                            // it as a button.
+                            (option) => Semantics(
+                              button: true,
+                              label: option,
+                              onTap: () => _onChipTap(option),
+                              child: ExcludeSemantics(
+                                child: ActionChip(
+                                  label: Text(option),
+                                  onPressed: () => _onChipTap(option),
+                                  labelStyle: const TextStyle(
+                                    color: Color(0xFFE6E1FF),
+                                  ),
+                                  backgroundColor: const Color(0xFF2A2450),
+                                  side: const BorderSide(
+                                    color: Color(0xFF7C6FD9),
+                                    width: 1,
+                                  ),
+                                ),
                               ),
                             ),
                           )
