@@ -5128,7 +5128,7 @@ class _PostStoryActionBar extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Unlock AI artwork for every story — free with your own key',
+                              'Unlock AI artwork for every story with Premium',
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.75),
                                 fontSize: 11,
