@@ -155,7 +155,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     }
     if (!teaserSeen) {
       setState(() => _step = -1);
-      unawaited(_speak("Welcome to Once Upon YOUR Child! Where you are the hero.",
+      unawaited(_speak(
+          "Welcome to Once Upon YOUR Child! Where you are the hero.",
           rateScale: 0.8));
       return;
     }
@@ -363,10 +364,16 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       final greeting = isMature ? 'Hi, $name.' : 'Hi, $name! Nice to meet you!';
       AppTtsService.instance
           .speak(
-        greeting,
-        awaitCompletion: true,
-        rateScale: isMature ? 0.85 : 0.72,
-      )
+            greeting,
+            awaitCompletion: true,
+            rateScale: isMature ? 0.85 : 0.72,
+          )
+          // MT-431: the greeting carries the name, so it is always a cache
+          // miss; on a cold backend synthesis plus playback ran to ~20 s with
+          // the screen frozen. The submit button now shows a spinner for the
+          // wait, and this cap keeps a stalled request from wedging
+          // onboarding — the audio still plays if it arrives.
+          .timeout(const Duration(seconds: 10), onTimeout: () {})
           .then((_) {
         if (mounted) {
           setState(() => _celebratingName = false);
@@ -784,8 +791,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           child: Opacity(
             opacity: _nameController.text.trim().isEmpty ? 0.4 : 1.0,
             child: _PressableButton(
-              onPressed:
-                  _nameController.text.trim().isEmpty ? null : _advanceFromName,
+              onPressed: _nameController.text.trim().isEmpty || _celebratingName
+                  ? null
+                  : _advanceFromName,
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
@@ -805,8 +813,22 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(buttonLeadingIcon,
-                        color: buttonLeadingColor, size: 22),
+                    // MT-431: while the greeting is being synthesised and
+                    // played the button is the only thing on screen that can
+                    // say "working" — swap its icon for a spinner.
+                    if (_celebratingName)
+                      const SizedBox(
+                        key: ValueKey('name-submit-spinner'),
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    else
+                      Icon(buttonLeadingIcon,
+                          color: buttonLeadingColor, size: 22),
                     const SizedBox(width: 8),
                     Text(
                       buttonLabel,
@@ -1096,9 +1118,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-              'Couldn\'t save right now. Please check your connection and '
-              'tap your age again.'),
+          content:
+              Text('Couldn\'t save right now. Please check your connection and '
+                  'tap your age again.'),
           backgroundColor: AppColors.error,
         ),
       );
