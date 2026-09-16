@@ -121,6 +121,103 @@ BedtimeStep bedtimeStepAfterSkipping(
   }
 }
 
+/// MT-433: which single question a "change it" answer points at, or null
+/// when the answer names nothing recognisable (the caller then falls back to
+/// walking the questions again, as before).
+///
+/// Pure and top-level so the keyword mapping is unit-testable without the
+/// voice wizard. Order matters: "friendship" must reach the story-kind case
+/// before "friend" reaches the companion case, and "who's listening" must
+/// reach listeners before "who" reaches the companion case.
+@visibleForTesting
+BedtimeStep? bedtimeStepToChange(String answer) {
+  final a = answer.toLowerCase();
+  if (a.trim().isEmpty) return null;
+  // Whole words only: "dragon" must not match "go", "bedtime" must not match
+  // "time", and "friendship" must not match "friend".
+  bool has(List<String> words) =>
+      RegExp('\\b(?:${words.join('|')})\\b').hasMatch(a);
+  if (has([
+    'listen',
+    'listening',
+    'listeners',
+    'brother',
+    'sister',
+    'sibling',
+    'just me'
+  ])) {
+    return BedtimeStep.listeners;
+  }
+  if (has([
+    'long',
+    'longer',
+    'length',
+    'minute',
+    'minutes',
+    'short',
+    'shorter',
+    'time'
+  ])) {
+    return BedtimeStep.duration;
+  }
+  if (has([
+    'kind',
+    'vibe',
+    'mood',
+    'feeling',
+    'brave',
+    'funny',
+    'friendship',
+    'calm',
+    'calming',
+    'adventure',
+    'story',
+  ])) {
+    return BedtimeStep.feeling;
+  }
+  if (has([
+    'place',
+    'where',
+    'setting',
+    'world',
+    'forest',
+    'cave',
+    'castle',
+    'sea'
+  ])) {
+    return BedtimeStep.setting;
+  }
+  // A child often names the creature instead of the question, so the chip
+  // animals count too.
+  if (has([
+    'buddy',
+    'companion',
+    'friend',
+    'who',
+    'coming',
+    'pal',
+    'dragon',
+    'bunny',
+    'owl',
+    'fox',
+    'wolf',
+    'panther',
+    'phoenix',
+    'robin',
+  ])) {
+    return BedtimeStep.companion;
+  }
+  return null;
+}
+
+/// MT-433: where the flow goes after the one question the child asked to
+/// change has been re-asked — back to the recipe read-back, never onward
+/// through the remaining questions. Generating is left alone so a Sprout
+/// path (which has no read-back) is unaffected.
+@visibleForTesting
+BedtimeStep bedtimeStepAfterSingleChange(BedtimeStep next) =>
+    next == BedtimeStep.generating ? next : BedtimeStep.confirm;
+
 class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     with TickerProviderStateMixin {
   final SpeechToText _speech = SpeechToText();
@@ -158,6 +255,10 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
   // tap made while the question is still being narrated counts (MT-430).
   List<String> _choiceOptions = [];
   final BedtimeTapGate _tapGate = BedtimeTapGate();
+
+  // MT-433: set while the child is changing exactly one recipe answer from
+  // the read-back; _advance returns to the read-back once it is re-asked.
+  BedtimeStep? _changingOnly;
 
   // PERF-04: backend task id of the in-flight generation. dispose() cancels the
   // worker if the user leaves before the story is ready. Nulled once the story
@@ -510,8 +611,30 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
         );
         if (_isAffirmative(answer)) {
           _advance(BedtimeStep.generating);
-        } else {
+          break;
+        }
+        // MT-433: ask which one thing to change. Restarting at the companion
+        // question meant five narrated questions to change one answer.
+        final what = await _askQuestion(
+          _isMature
+              ? "Which part? The companion, the place, the vibe, the length, or who's listening?"
+              : "What should I change? Your buddy, the place, the kind of story, how long it is, or who's listening?",
+          options: _isMature
+              ? const ['Companion', 'Place', 'Vibe', 'Length', 'Listeners']
+              : const [
+                  'Buddy',
+                  'Place',
+                  'Kind of story',
+                  'Length',
+                  "Who's listening"
+                ],
+        );
+        final step = bedtimeStepToChange(what);
+        if (step == null) {
           _advance(BedtimeStep.companion);
+        } else {
+          _changingOnly = step;
+          _advance(step);
         }
         break;
 
@@ -566,10 +689,23 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
 
   void _advance(BedtimeStep next) {
     if (!mounted) return;
+    var target = next;
+    // MT-433: a single-question change. Leaving the read-back for the chosen
+    // question runs that question even if the visual wizard seeded it (the
+    // child just asked to change it); leaving the chosen question returns
+    // to the read-back instead of walking on through the rest.
+    if (_changingOnly != null) {
+      if (_step == BedtimeStep.confirm) {
+        setState(() => _step = target);
+        _runStep();
+        return;
+      }
+      _changingOnly = null;
+      target = bedtimeStepAfterSingleChange(target);
+    }
     // Walk past any step the visual wizard already answered for us. Loop
     // rather than single-step: a fully-seeded hand-off skips five in a row
     // and should land on the confirm recap, not on the second seeded step.
-    var target = next;
     while (_isAnswered(target)) {
       if (target == BedtimeStep.companion && _isSprout) {
         // Mirror the side effects the spoken companion case applies for
