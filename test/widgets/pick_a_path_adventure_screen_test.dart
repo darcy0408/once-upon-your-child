@@ -10,10 +10,33 @@ import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/services/interactive_story_service.dart';
 import 'package:story_weaver_app/services/api_service_manager.dart';
+import 'package:story_weaver_app/services/app_tts_service.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
 import 'package:story_weaver_app/widgets/error_message.dart';
 import 'package:story_weaver_app/widgets/magical_loading_view.dart';
 import '../helpers/pick_a_path_test_helpers.dart';
+
+/// No-op TTS so narration never touches the network or schedules timers.
+class _SilentTts extends AppTtsService {
+  _SilentTts() : super.forTesting();
+
+  @override
+  Future<void> init({List<String> warmUpPhrases = const []}) async {}
+
+  @override
+  void markInteracted() {}
+
+  @override
+  Future<void> speak(
+    String text, {
+    String? voiceId,
+    bool awaitCompletion = false,
+    double rateScale = 0.85,
+  }) async {}
+
+  @override
+  Future<void> stop() async {}
+}
 
 void testLargeWidgets(String description, WidgetTesterCallback callback) {
   testWidgets(description, (tester) async {
@@ -29,12 +52,18 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    // The screen narrates every segment through the real TTS singleton,
+    // whose network call fails under test and (since MT-432) schedules a
+    // retry timer — which the test framework then reports as still pending
+    // after the widget tree is disposed. Fake it, as the screen tests do.
+    AppTtsService.instance = _SilentTts();
   });
 
   tearDown(() {
     // Clean up test client after each test
     InteractiveStoryService.setTestClient(null);
     ApiServiceManager.setTestClient(null);
+    AppTtsService.instance = null;
   });
 
   http.Response _authMock(http.Request request) {
@@ -48,7 +77,8 @@ void main() {
     testLargeWidgets('G1: Shows loading spinner when story is generating',
         (tester) async {
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         // Simulate slow response
         await Future.delayed(const Duration(milliseconds: 100));
         return http.Response(
@@ -86,7 +116,8 @@ void main() {
 
     testLargeWidgets('G1: Shows correct app bar title', (tester) async {
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         return http.Response(
           jsonEncode(PickAPathTestHelpers.createStartStoryResponseJson(
               title: 'Pick-A-Path Adventure')),
@@ -123,7 +154,8 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
@@ -164,7 +196,8 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
@@ -197,7 +230,8 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
@@ -230,7 +264,8 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
@@ -260,7 +295,8 @@ void main() {
   });
 
   group('PickAPathAdventureScreen - Inventory Section', () {
-    testLargeWidgets('G7: Updates inventory when items are added', (tester) async {
+    testLargeWidgets('G7: Updates inventory when items are added',
+        (tester) async {
       final startResponse = PickAPathTestHelpers.createStartStoryResponseJson(
         inventory: [
           {'id': 'item_000', 'name': 'Old Map', 'acquired_at_segment': 1}
@@ -282,7 +318,8 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -335,7 +372,8 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
@@ -366,7 +404,8 @@ void main() {
       expect(find.textContaining('Find the lost treasure'), findsOneWidget);
     });
 
-    testLargeWidgets('G8: Updates adventure status after choice', (tester) async {
+    testLargeWidgets('G8: Updates adventure status after choice',
+        (tester) async {
       final startResponse = PickAPathTestHelpers.createStartStoryResponseJson(
         content: 'Start content',
         state: {
@@ -390,7 +429,8 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -440,7 +480,8 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -494,7 +535,8 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -549,7 +591,8 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -595,7 +638,8 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -711,10 +755,12 @@ void main() {
   });
 
   group('PickAPathAdventureScreen - Error Handling', () {
-    testLargeWidgets('I1: Shows error message on network failure during generation',
+    testLargeWidgets(
+        'I1: Shows error message on network failure during generation',
         (tester) async {
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         return http.Response('Network error', 500);
       });
 
@@ -746,7 +792,8 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -785,7 +832,8 @@ void main() {
     testLargeWidgets('I3: Shows retry UI on timeout during initial generation',
         (tester) async {
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         throw TimeoutException('Request timed out');
       });
 
@@ -914,7 +962,8 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
@@ -944,7 +993,8 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
+        if (request.url.path.contains('/auth/anonymous'))
+          return _authMock(request);
         // The 9+ fixture contains an em dash, which http.Response encodes as
         // Latin-1 by default and throws on — the mock then failed before the
         // screen ever saw a segment, so this test was red for reasons that had

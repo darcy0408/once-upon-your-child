@@ -394,10 +394,11 @@ class AppTtsService {
         if (myGen != _speakGen) return;
         // Pass rateScale to ElevenLabs so the actual audio is slower for young
         // children — the fallback device TTS already uses rateScale below.
-        final ttsResult = await TtsApiService.synthesize(
+        final ttsResult = await synthesizeWithOneRetry(
           cleanText,
           voiceId: id,
           speed: rateScale.clamp(0.7, 1.2),
+          stillWanted: () => myGen == _speakGen,
         );
         if (myGen != _speakGen) return;
         mp3 = ttsResult?.audioBytes;
@@ -492,6 +493,43 @@ class AppTtsService {
       await _fallback.speak(text);
       if (rateScale != 1.0) await _fallback.setSpeechRate(0.42);
     }
+  }
+
+  /// MT-432: pause before the single retry of a narration request that came
+  /// back with no audio.
+  static const Duration narrationRetryDelay = Duration(milliseconds: 700);
+
+  /// One synthesis attempt, retried once after [narrationRetryDelay] if it
+  /// returned no audio (a 503 from the provider chain, or a network blip).
+  ///
+  /// A single transient failure used to switch the narrator to the robotic
+  /// on-device voice for that utterance — observed mid-flow in a bedtime run,
+  /// where a voice change in a dark room is jarring — so the backend gets one
+  /// more chance first. Typed failures (daily quota, rate limit, consent gate,
+  /// monthly cap) are not transient and propagate at once. [stillWanted]
+  /// lets an utterance that was superseded by stop() or a newer speak() skip
+  /// the retry. [attempt] is a test seam standing in for the network call;
+  /// production leaves it null.
+  @visibleForTesting
+  Future<TtsSynthesisResult?> synthesizeWithOneRetry(
+    String text, {
+    required String voiceId,
+    required double speed,
+    bool Function()? stillWanted,
+    Future<TtsSynthesisResult?> Function()? attempt,
+  }) async {
+    final run = attempt ??
+        () => TtsApiService.synthesize(text, voiceId: voiceId, speed: speed);
+    final first = await run();
+    if (first != null && first.audioBytes.isNotEmpty) return first;
+    if (stillWanted != null && !stillWanted()) return first;
+    debugPrint(
+      'TTS returned no audio; retrying once in '
+      '${narrationRetryDelay.inMilliseconds} ms',
+    );
+    await Future<void>.delayed(narrationRetryDelay);
+    if (stillWanted != null && !stillWanted()) return first;
+    return run();
   }
 
   Future<void> stop() async {
