@@ -190,6 +190,21 @@ class AppTtsService {
   // clears re-kicks it.
   bool _consentGatePrewarmPending = false;
 
+  // MT-431: the warm-up pass is up to 40 synthesis requests, fired on every
+  // fresh install before the parent has even seen the consent screen. Until
+  // a consent record exists only three interface phrases are ever spoken, so
+  // warming the wizard vocabulary then is vendor spend on every visitor who
+  // bounces at the age gate. Set when init() found no consent on file; the
+  // first successful speak() after that re-checks and warms once consent
+  // has been recorded (the parent's screen, or a 13+ self-attestation).
+  bool _warmUpAwaitingConsent = false;
+  List<String> _warmUpPhrases = kWarmUpPhrases;
+
+  /// True while the start-up warm-up is being held back for lack of a
+  /// consent record. Exposed for tests.
+  @visibleForTesting
+  bool get isWarmUpAwaitingConsent => _warmUpAwaitingConsent;
+
   // Set when the server reports the DAILY per-user synthesis quota is spent
   // (429 TTS_QUOTA_EXCEEDED). Unlike a transient rate limit it won't clear
   // until the next UTC day, so speak() stops issuing backend requests for the
@@ -246,8 +261,23 @@ class AppTtsService {
     await _fallback.setSpeechRate(0.42);
     await _fallback.setPitch(1.05);
     _ready = true;
-    // Start prewarm only after auth is ready — all phrases need a valid token.
-    unawaited(_authReady!.then((_) => _prewarm(warmUpPhrases)));
+    _warmUpPhrases = warmUpPhrases;
+    // Start prewarm only after auth is ready — all phrases need a valid token
+    // — and only once consent is on file (MT-431).
+    unawaited(_authReady!.then((_) => warmUpIfConsented()));
+  }
+
+  /// Runs the warm-up pass if a consent record exists, otherwise defers it
+  /// until the first spoken phrase after consent. Returns whether it ran.
+  @visibleForTesting
+  Future<bool> warmUpIfConsented({List<String>? phrases}) async {
+    if (await const ParentalConsentService().hasConsent()) {
+      _warmUpAwaitingConsent = false;
+      await _prewarm(phrases ?? _warmUpPhrases);
+      return true;
+    }
+    _warmUpAwaitingConsent = true;
+    return false;
   }
 
   static const int _maxPrewarmRetries = 4;
@@ -381,6 +411,12 @@ class AppTtsService {
         if (_consentGatePrewarmPending) {
           _consentGatePrewarmPending = false;
           unawaited(_prewarm(kWarmUpPhrases));
+        }
+        // MT-431: warm-up held back at start-up for lack of consent — the
+        // check re-arms itself if consent is still missing.
+        if (_warmUpAwaitingConsent) {
+          _warmUpAwaitingConsent = false;
+          unawaited(warmUpIfConsented());
         }
         if (kIsWeb) {
           // On web, audioplayers' BytesSource converts bytes to a data: URI and
