@@ -1840,6 +1840,17 @@ def run_antihero_part2(**kwargs) -> dict:
     return {"pages": pages, "saga_state": saga_state}
 
 
+def _find_owned_companion(name: str, user_id):
+    """Look up a companion character by name among *user_id*'s own characters.
+
+    Names are not unique across accounts, so the lookup is always scoped to
+    the requesting user; an anonymous or missing user matches nothing.
+    """
+    if not name or not user_id or user_id == "anonymous":
+        return None
+    return Character.query.filter_by(name=name, user_id=str(user_id)).first()
+
+
 @celery.task(
     bind=True,
     name="tasks.generate_story",
@@ -1986,8 +1997,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         companion_character_details.append(char_data)
                     else:
                         # It's a name string, try to look up in DB
-                        char_name = str(char_data)
-                        char_record = Character.query.filter_by(name=char_name).first()
+                        char_record = _find_owned_companion(str(char_data), user_id)
                         if char_record:
                             companion_character_details.append(
                                 {
@@ -2008,7 +2018,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                                 # MT-364: companion name is child-provided PII — do not log it
                                 "Companion character not found in database"
                             )
-                            companion_character_details.append({"name": char_name})
+                            companion_character_details.append({"name": str(char_data)})
 
             engine = AdvancedStoryEngine()
 

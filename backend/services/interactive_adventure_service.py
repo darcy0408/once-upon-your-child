@@ -389,7 +389,15 @@ class InteractiveAdventureService:
             parent_choice_id = None
         else:
             # Load choice and mark as selected
-            choice = StoryChoice.query.filter_by(id=choice_id).first()
+            # The choice must belong to THIS story — choice IDs are not
+            # scoped by the caller's ownership check on the story alone.
+            choice = (
+                StoryChoice.query.join(
+                    StorySegment, StoryChoice.segment_id == StorySegment.id
+                )
+                .filter(StoryChoice.id == choice_id, StorySegment.story_id == story.id)
+                .first()
+            )
             if not choice:
                 raise ValueError(f"Choice {choice_id} not found")
 
