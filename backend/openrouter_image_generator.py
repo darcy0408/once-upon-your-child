@@ -14,6 +14,11 @@ from datetime import datetime
 
 import requests
 
+try:
+    from .utils.safe_fetch import safe_get_bytes
+except ImportError:  # loaded as a top-level module
+    from utils.safe_fetch import safe_get_bytes
+
 logger = logging.getLogger(__name__)
 
 
@@ -99,17 +104,9 @@ class OpenRouterImageGenerator:
         return None
 
     def _download_image_bytes(self, url: str, max_size: int = 5 * 1024 * 1024) -> bytes:
-        img_resp = requests.get(url, stream=True, timeout=30)
-        img_resp.raise_for_status()
-        content_length = img_resp.headers.get("Content-Length")
-        if content_length and int(content_length) > max_size:
-            raise ValueError(f"Image too large: {content_length} bytes")
-        image_bytes = bytearray()
-        for chunk in img_resp.iter_content(chunk_size=8192):
-            image_bytes.extend(chunk)
-            if len(image_bytes) > max_size:
-                raise ValueError("Image exceeded size limit during download")
-        return bytes(image_bytes)
+        # The URL comes from a provider reply or a request field, never from
+        # us — safe_get_bytes refuses anything but https to a public host.
+        return safe_get_bytes(url, timeout=30, max_bytes=max_size)
 
     def _normalize_image_to_base64(self, image_value: str) -> str | None:
         if not image_value or not isinstance(image_value, str):

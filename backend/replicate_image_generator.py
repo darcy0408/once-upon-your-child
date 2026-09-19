@@ -12,6 +12,11 @@ from datetime import datetime
 
 import requests
 
+try:
+    from .utils.safe_fetch import safe_get
+except ImportError:  # loaded as a top-level module
+    from utils.safe_fetch import safe_get
+
 logger = logging.getLogger(__name__)
 
 # M-5 — Image moderation parity. The Flux providers (Replicate Flux Schnell and
@@ -351,7 +356,7 @@ class ReplicateImageGenerator:
         for i, url in enumerate(urls):
             try:
                 # Download image
-                img_response = requests.get(url, timeout=30)
+                img_response = safe_get(url, timeout=30)
                 if img_response.status_code != 200:
                     logger.error(f"Failed to download image from {url}")
                     continue
@@ -678,7 +683,7 @@ class ReplicateImageGenerator:
         for i, image_url in enumerate(output_urls[:num_images]):
             try:
                 if isinstance(image_url, str) and image_url.startswith("http"):
-                    dl = requests.get(image_url, timeout=30)
+                    dl = safe_get(image_url, timeout=30)
                     dl.raise_for_status()
                     image_b64 = base64.b64encode(dl.content).decode("utf-8")
                 elif isinstance(image_url, str):

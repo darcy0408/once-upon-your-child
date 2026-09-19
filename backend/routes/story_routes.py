@@ -7,7 +7,6 @@ import os
 import re
 import uuid
 
-import requests
 from celery.exceptions import TimeoutError as CeleryTimeoutError
 from flask import Blueprint, current_app, g, jsonify, request
 from flask_limiter.util import get_remote_address
@@ -40,6 +39,7 @@ from ..utils.ai_quota import (
 )
 from ..utils.audit import audit_log
 from ..utils.lazy_import import load_first_available
+from ..utils.safe_fetch import safe_get
 from ..utils.task_owner import cache_task_owner as _cache_task_owner
 from ..utils.task_owner import resolve_task_owner as _resolve_task_owner
 from ..utils.validators import (
@@ -3010,7 +3010,7 @@ def create_story_blueprint(
                                 f"Downloading illustration from {image_url[:50]}..."
                             )
                             # Stream the response to check size before loading into memory
-                            img_resp = requests.get(image_url, stream=True, timeout=10)
+                            img_resp = safe_get(image_url, stream=True, timeout=10)
                             img_resp.raise_for_status()
 
                             # Enforce 5MB limit via Content-Length header if available
@@ -3367,9 +3367,7 @@ def create_story_blueprint(
                                 logger.info(
                                     f"Downloading coloring page from {image_url[:50]}..."
                                 )
-                                img_resp = requests.get(
-                                    image_url, stream=True, timeout=10
-                                )
+                                img_resp = safe_get(image_url, stream=True, timeout=10)
                                 img_resp.raise_for_status()
 
                                 content_length = img_resp.headers.get("Content-Length")
