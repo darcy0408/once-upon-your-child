@@ -228,6 +228,54 @@ class TestGenerateInteractiveStoryAPI:
         assert call_kwargs["character_id"] == test_character_fixture.id
         assert call_kwargs["theme"] == "Magic"
 
+    def test_flagged_opening_is_overwritten_in_storage_not_just_the_response(
+        self,
+        client,
+        auth_headers,
+        test_character_fixture,
+        mock_interactive_service,
+        mocker,
+    ):
+        """A moderation-rejected opening must be replaced where it is stored,
+        so reloading or resuming the story cannot bring the rejected text back."""
+        mocker.patch(
+            "backend.utils.content_moderator.moderate_story_content",
+            return_value=(False, "test rejection"),
+        )
+        mock_interactive_service.create_story.return_value["segment"][
+            "id"
+        ] = "segment-abc"
+        mock_interactive_service.replace_segment_with_fallback.return_value = {
+            "title": "A Gentle Pause",
+            "segment": {
+                "id": "segment-abc",
+                "segment_number": 1,
+                "title": "A Gentle Pause",
+                "content": "stored fallback content",
+                "choices": [{"id": "real-choice-id", "text": "Rest"}],
+            },
+            "inventory": [],
+            "state": {"current_location": None, "current_goal": None},
+        }
+
+        response = client.post(
+            "/generate-interactive-story",
+            headers=auth_headers,
+            json={"character_id": test_character_fixture.id, "length": "short"},
+        )
+
+        assert response.status_code == 200
+        call = mock_interactive_service.replace_segment_with_fallback.call_args
+        assert call.args[0] == "segment-abc"
+        assert call.kwargs["is_opening"] is True
+
+        data = response.get_json()
+        assert data["segment"]["content"] == "stored fallback content"
+        assert data["segment"]["choices"][0]["id"] == "real-choice-id"
+        assert data["title"] == "A Gentle Pause"
+        assert data["inventory"] == []
+        assert "mysterious forest" not in response.get_data(as_text=True)
+
     def test_create_interactive_story_theme_defaults_to_adventure(
         self, client, auth_headers, test_character_fixture, mock_interactive_service
     ):
