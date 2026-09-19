@@ -449,6 +449,43 @@ class TestFailClosed:
         assert is_safe is False
         assert reason == "moderation unavailable"
 
+    @pytest.mark.parametrize(
+        "reply",
+        [
+            '{"reason": "looks fine"}',  # no verdict key at all
+            '{"safe": null}',
+            '{"safe": "maybe"}',
+            "[]",  # valid JSON, wrong shape
+        ],
+    )
+    def test_fail_closed_on_missing_or_malformed_verdict(self, reply):
+        """A reply without an explicit boolean verdict is unverified, not safe."""
+        from backend.utils.content_moderator import moderate_story_content
+
+        mock_client = _mock_openai_client(_mock_openai_response(reply))
+
+        is_safe, reason = moderate_story_content(
+            "Any story.", age=4, client=mock_client, fail_closed=True
+        )
+
+        assert is_safe is False
+        assert reason == "moderation unavailable"
+
+    def test_string_false_verdict_is_unsafe(self):
+        """ "false" as a string must not be truthy-coerced into safe."""
+        from backend.utils.content_moderator import moderate_story_content
+
+        mock_client = _mock_openai_client(
+            _mock_openai_response('{"safe": "false", "reason": "violence"}')
+        )
+
+        is_safe, reason = moderate_story_content(
+            "Any story.", age=4, client=mock_client, fail_closed=True
+        )
+
+        assert is_safe is False
+        assert reason == "violence"
+
     def test_fail_open_remains_default(self):
         """Without fail_closed, a classifier error still fails open."""
         from backend.utils.content_moderator import moderate_story_content

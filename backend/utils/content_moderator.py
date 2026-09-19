@@ -518,7 +518,19 @@ def _classify_chunk(
             ).strip()
 
         result = json.loads(raw)
-        is_safe = bool(result.get("safe", True))
+        # A verdict only counts if it is explicit. A reply with no "safe"
+        # key (or a non-boolean one — bool("false") is True) is unverified,
+        # same as an unparseable reply: it must never default to "safe".
+        verdict = result.get("safe") if isinstance(result, dict) else None
+        if isinstance(verdict, str) and verdict.strip().lower() in ("true", "false"):
+            verdict = verdict.strip().lower() == "true"
+        if not isinstance(verdict, bool):
+            logger.warning(
+                "content_moderator: classifier reply had no explicit verdict, "
+                f"{'failing closed' if fail_closed else 'failing open'}"
+            )
+            return _unverified
+        is_safe = verdict
         reason = result.get("reason", "") if not is_safe else ""
 
         if not is_safe:
