@@ -35,19 +35,48 @@ from backend.azure_tts_service import (
 class TestAzureHelpers:
     def test_known_voice_maps(self):
         # Matilda (ElevenLabs) → the matching Azure neural voice.
-        assert azure_voice_for("XrExE9yKIg1WjnnlVkGX") == "en-US-JennyNeural"
+        assert azure_voice_for("XrExE9yKIg1WjnnlVkGX") == "en-US-AvaMultilingualNeural"
 
     def test_unknown_voice_falls_back_to_default(self):
         assert azure_voice_for("not-a-real-id") == DEFAULT_AZURE_VOICE
         assert azure_voice_for("") == DEFAULT_AZURE_VOICE
         assert azure_voice_for(None) == DEFAULT_AZURE_VOICE
 
-    def test_azure_voices_match_edge_voices(self):
-        # The whole point: Azure uses the SAME neural voice names as the Edge
-        # fallback, so the switch is audibly seamless. Verify parity.
+    def test_default_voice_is_the_picker_default(self):
+        # Matilda is the picker's default, so the fallback voice must be hers —
+        # otherwise an unrecognized ID reads in a voice nobody chose.
+        assert DEFAULT_AZURE_VOICE == ats._ELEVENLABS_TO_AZURE["XrExE9yKIg1WjnnlVkGX"]
+
+    def test_us_voices_are_deliberately_repointed(self):
+        # 2026-09-23: the three US voices were repointed after the owner listened
+        # to samples of every candidate. Pinned so a future "restore Edge parity"
+        # cleanup can't quietly undo an owner decision.
+        assert ats._ELEVENLABS_TO_AZURE["XrExE9yKIg1WjnnlVkGX"] == (
+            "en-US-AvaMultilingualNeural"  # Matilda
+        )
+        assert ats._ELEVENLABS_TO_AZURE["21m00Tcm4TlvDq8ikWAM"] == (
+            "en-US-EmmaMultilingualNeural"  # Rachel
+        )
+        assert ats._ELEVENLABS_TO_AZURE["N2lVS1w4EtoT3dr4eOWO"] == (
+            "en-US-Andrew:DragonHDLatestNeural"  # Callum — an HD voice
+        )
+
+    def test_accented_voices_still_match_edge(self):
+        # Only the three US entries diverged. The accented voices exist FOR their
+        # accent, so they must keep tracking the Edge names exactly.
         from backend.edge_tts_service import _ELEVENLABS_TO_EDGE
 
-        assert ats._ELEVENLABS_TO_AZURE == _ELEVENLABS_TO_EDGE
+        repointed = {
+            "XrExE9yKIg1WjnnlVkGX",
+            "21m00Tcm4TlvDq8ikWAM",
+            "N2lVS1w4EtoT3dr4eOWO",
+        }
+        assert set(ats._ELEVENLABS_TO_AZURE) == set(_ELEVENLABS_TO_EDGE)
+        for voice_id, azure_voice in ats._ELEVENLABS_TO_AZURE.items():
+            if voice_id in repointed:
+                assert azure_voice != _ELEVENLABS_TO_EDGE[voice_id]
+            else:
+                assert azure_voice == _ELEVENLABS_TO_EDGE[voice_id]
 
     @pytest.mark.parametrize(
         "speed,expected",
@@ -169,6 +198,50 @@ class TestAzureRouteWiring:
         assert status == 200
         assert body["provider"] == "azure"
         legacy["eleven"].generate_speech_with_timestamps.assert_not_called()
+
+    def _captured_cache_chain(self, client, headers, mocker):
+        """POST once and return the `chain` the cache key was built from."""
+        from backend.services import tts_audio_cache_service as cache_mod
+
+        seen = {}
+
+        def _spy(**kwargs):
+            seen.update(kwargs)
+            return "deadbeef"
+
+        mocker.patch.object(cache_mod, "compute_cache_key", side_effect=_spy)
+        mocker.patch.object(cache_mod, "get_cached_tts_audio", return_value=None)
+        mocker.patch.object(cache_mod, "store_tts_audio", return_value=None)
+        status, _ = _post(client, headers)
+        assert status == 200
+        return seen["chain"]
+
+    def test_cache_key_carries_the_resolved_azure_voice(
+        self, client, free_user_headers, legacy, mocker
+    ):
+        # The picker's voice_id alone is NOT enough: repointing a picker entry at
+        # a different Azure voice leaves the ID unchanged, so cached audio would
+        # replay in the old voice forever.
+        _enable_azure(mocker, (b"azure-audio", []))
+
+        chain = self._captured_cache_chain(client, free_user_headers, mocker)
+
+        assert chain == "azure:en-US-AvaMultilingualNeural"
+
+    def test_repointing_a_voice_changes_the_cache_key(
+        self, client, free_user_headers, legacy, mocker
+    ):
+        # Same picker entry, different Azure voice behind it → different chain,
+        # so every cached story is re-synthesized in the new voice.
+        _enable_azure(mocker, (b"azure-audio", []))
+        mocker.patch.dict(
+            ats._ELEVENLABS_TO_AZURE,
+            {"XrExE9yKIg1WjnnlVkGX": "en-US-JennyNeural"},
+        )
+
+        chain = self._captured_cache_chain(client, free_user_headers, mocker)
+
+        assert chain == "azure:en-US-JennyNeural"
 
     def test_legacy_chain_unchanged_when_azure_off(
         self, client, free_user_headers, legacy, mocker

@@ -209,6 +209,23 @@ def _get_azure_service():
     return _azure_service
 
 
+def _azure_voice_name(voice_id):
+    """Resolve the picker's voice ID to the Azure voice that will be spoken.
+
+    Used in the audio cache key so cached audio is never replayed after the
+    picker entry is repointed at a different Azure voice. Falls back to the raw
+    voice_id if the module can't be imported, which only costs a cache miss.
+    """
+    try:
+        from backend.azure_tts_service import azure_voice_for
+    except ImportError:
+        try:
+            from azure_tts_service import azure_voice_for
+        except ImportError:
+            return (voice_id or "").strip()
+    return azure_voice_for(voice_id)
+
+
 def _azure_synthesize(text, voice_id, speed):
     """
     Synthesize narration via Azure AI Speech.
@@ -394,7 +411,14 @@ def create_tts_blueprint(limiter, require_auth):
             if azure_enabled:
                 # Azure serves everyone identically; premium/dialogue opt-ins
                 # are bypassed, so they must not fragment the key.
-                chain = "azure"
+                #
+                # The RESOLVED Azure voice is part of the chain, not just the
+                # picker's voice_id: repointing a picker entry at a different
+                # Azure voice (as the 2026-09-23 US-voice change did) leaves the
+                # voice_id untouched, so without this every already-cached story
+                # would replay in the OLD voice forever and the change would look
+                # like it never shipped.
+                chain = f"azure:{_azure_voice_name(voice_id)}"
                 key_premium = False
                 key_dialogue = None
             else:
