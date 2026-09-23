@@ -524,12 +524,12 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                           // to parents must name the operator and give
                                           // a postal address and phone number.
                                           const Text(
-                                              '• Operator: Darcy VanPelt',
+                                              '• Operator: Once Upon YOUR Child! LLC',
                                               style: textWhite70),
                                           const Text(
                                               '• Postal address: 2816 Orchard Ave, Grand Junction, CO 81501',
                                               style: textWhite70),
-                                          const Text('• Phone: 970-640-2011',
+                                          const Text('• Phone: 970-462-9994',
                                               style: textWhite70),
                                           const Text(
                                               '• Email: darcy@onceuponyourchild.app',
