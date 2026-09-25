@@ -731,29 +731,6 @@ def _extract_sentence_end_words(page_text: str) -> list[str]:
     return words
 
 
-def _rhyme_key(word: str) -> str:
-    """Get a simple phonetic-ish tail used for lightweight rhyme matching."""
-    clean = re.sub(r"[^a-z]", "", word.lower())
-    clean = clean.replace("y", "i")  # Normalize y to i for phonetic matching
-    if len(clean) < 2:
-        return clean
-    if clean.endswith("e") and len(clean) > 3:
-        clean = clean[:-1]
-    # Use substring from last vowel to end (e.g., "cat" -> "at", "sun" -> "un")
-    match = re.search(r"[aeiou][a-z]*$", clean)
-    if match:
-        return match.group(0)
-    return clean[-2:]
-
-
-def _words_rhyme(word_a: str, word_b: str) -> bool:
-    if not word_a or not word_b:
-        return False
-    key_a = _rhyme_key(word_a)
-    key_b = _rhyme_key(word_b)
-    return len(key_a) >= 2 and key_a == key_b
-
-
 # Per-page word caps for the Learning-to-Read format check. Early-reader
 # pages are 1-2 short sentences; a complete AABBA limerick is 26-40 words.
 _LTR_MAX_WORDS_PER_PAGE = 25
@@ -762,7 +739,7 @@ _LIMERICK_MAX_WORDS_PER_PAGE = 45
 
 # Long-vowel spellings that share one sound, so seek/squeak, plane/rain,
 # moon/tune and boat/note score as the rhymes they are. "ii" is "igh" after
-# the rewrite in _limerick_rhyme_tail (high, light).
+# the rewrite in _rhyme_tail (high, light).
 _LIMERICK_LONG_VOWELS = {
     "ee": "e",
     "ea": "e",
@@ -776,15 +753,16 @@ _LIMERICK_LONG_VOWELS = {
 }
 
 
-def _limerick_rhyme_tail(word: str) -> str:
+def _rhyme_tail(word: str) -> str:
     """Tail from the LAST vowel group — the part of a word that carries rhyme.
 
-    ``_rhyme_key`` takes the tail from the FIRST vowel, so multi-syllable
-    words never match their rhymes ("inside" → "insid" vs "wide" → "id";
-    "debate" → "ebat" vs "gate" → "at"). Limerick lines lean on exactly those
-    words, so the limerick check scores on the final syllable instead. Kept
-    local to the limerick check so Rhyme Time / early-reader retry behaviour
-    is untouched.
+    The heuristic this replaced took the tail from the FIRST vowel, so no
+    multi-syllable word ever matched its rhyme ("inside" → "insid" vs "wide"
+    → "id"; "debate" → "ebat" vs "gate" → "at"). It scored the limerick check
+    only at first; MT-438 found the Easy Reader couplet check failing the same
+    way, rejecting correctly rhyming pages and spending both retries plus the
+    extra generation on every age-8 story. Both checks now score the final
+    syllable, which is the one that has to rhyme.
 
     The vowel group is reduced to its sound and marked long (``:``) when the
     spelling says so — a silent e, a long-vowel digraph, or a bare vowel
@@ -817,10 +795,10 @@ def _limerick_rhyme_tail(word: str) -> str:
     return f"{vowels}{':' if long_vowel else ''}{consonants}"
 
 
-def _limerick_words_rhyme(word_a: str, word_b: str) -> bool:
+def _words_rhyme(word_a: str, word_b: str) -> bool:
     if not word_a or not word_b:
         return False
-    return _limerick_rhyme_tail(word_a) == _limerick_rhyme_tail(word_b)
+    return _rhyme_tail(word_a) == _rhyme_tail(word_b)
 
 
 def _is_limerick_page_ok(page: str) -> bool:
@@ -846,10 +824,9 @@ def _is_limerick_page_ok(page: str) -> bool:
     if any(not w for w in ends):
         return False
     checks = (
-        _limerick_words_rhyme(ends[0], ends[1]),
-        _limerick_words_rhyme(ends[2], ends[3]),
-        _limerick_words_rhyme(ends[0], ends[4])
-        or _limerick_words_rhyme(ends[1], ends[4]),
+        _words_rhyme(ends[0], ends[1]),
+        _words_rhyme(ends[2], ends[3]),
+        _words_rhyme(ends[0], ends[4]) or _words_rhyme(ends[1], ends[4]),
     )
     return sum(checks) >= 2
 
