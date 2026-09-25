@@ -30,7 +30,7 @@ class PerformanceVerificationTest(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
-    @patch("backend.routes.story_routes.requests.get")
+    @patch("backend.utils.safe_fetch.requests.get")
     def test_image_download_limit(self, mock_get):
         """Test that image downloads enforce 5MB limit"""
         print("\nTesting Image Download Safety...")

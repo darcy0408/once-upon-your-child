@@ -1141,3 +1141,149 @@ def test_generate_segment_with_retry_sanitizes_model_authored_state(
     assert data["story_state"]["location"] == "Playroom"
     assert data["choices"][0]["text"] == "Say sorry"
     assert data["content"] == "You take a breath and check on Pip."
+
+
+# ---------------------------------------------------------------------------
+# Moderation-rejected segments must be overwritten where they are stored,
+# not only in the response the route sends back.
+# ---------------------------------------------------------------------------
+
+
+def _seed_story_with_choice(test_user, test_character):
+    story = InteractiveStory(
+        id=str(uuid.uuid4()),
+        user_id=test_user.id,
+        character_id=test_character.id,
+        title="Test Adventure",
+        theme="Adventure",
+        tone="fantasy",
+        length="long",
+        age=7,
+        current_segment_number=1,
+    )
+    db.session.add(story)
+    db.session.add(
+        StoryState(
+            id=str(uuid.uuid4()),
+            story_id=story.id,
+            current_location="Start",
+            current_goal="Explore",
+        )
+    )
+    segment = StorySegment(
+        id=str(uuid.uuid4()),
+        story_id=story.id,
+        segment_number=1,
+        content="Beginning...",
+    )
+    db.session.add(segment)
+    db.session.flush()
+    choice = StoryChoice(
+        id=str(uuid.uuid4()),
+        segment_id=segment.id,
+        choice_number=1,
+        text="Next step",
+    )
+    db.session.add(choice)
+    story.current_segment_id = segment.id
+    db.session.commit()
+    return story, choice
+
+
+def test_replace_segment_with_fallback_overwrites_stored_continuation(
+    app, interactive_service, test_user, test_character, mock_genai_client
+):
+    from backend.utils.content_moderator import build_safe_fallback_segment
+
+    with app.app_context():
+        db.session.merge(test_user)
+        db.session.merge(test_character)
+        story, choice = _seed_story_with_choice(test_user, test_character)
+
+        mock_response = MagicMock()
+        mock_response.text = json.dumps(
+            {
+                "title": "REJECTED TITLE",
+                "content": "REJECTED CONTENT",
+                "is_ending": False,
+                "inventory": ["REJECTED ITEM"],
+                "story_state": {"location": "REJECTED PLACE", "goal": "REJECTED GOAL"},
+                "choices": [
+                    {"id": "choice_1", "text": "REJECTED CHOICE A"},
+                    {"id": "choice_2", "text": "REJECTED CHOICE B"},
+                ],
+            }
+        )
+        mock_genai_client.models.generate_content.return_value = mock_response
+
+        result = interactive_service.continue_story(story.id, choice.id)
+        fallback = build_safe_fallback_segment(segment_number=2, is_opening=False)
+        refreshed = interactive_service.replace_segment_with_fallback(
+            result["segment"]["id"], fallback, is_opening=False
+        )
+
+        # What a reload / resume would serve, and what the next prompt is
+        # built from, no longer contains any of the rejected text.
+        stored = json.dumps(interactive_service.get_story(story.id))
+        assert "REJECTED" not in stored
+        assert "REJECTED" not in json.dumps(refreshed)
+        assert "REJECTED" not in interactive_service._build_story_summary(
+            db.session.get(InteractiveStory, story.id)
+        )
+        assert fallback["content"] in stored
+
+        # State is back to what it was before the rejected segment.
+        assert refreshed["state"]["current_location"] == "Start"
+        assert refreshed["state"]["current_goal"] == "Explore"
+
+        # The fallback's buttons are real rows, so the story can go on.
+        choice_ids = [c["id"] for c in refreshed["segment"]["choices"]]
+        assert len(choice_ids) == len(fallback["choices"])
+        for choice_id in choice_ids:
+            assert db.session.get(StoryChoice, choice_id) is not None
+
+        db.session.delete(db.session.get(InteractiveStory, story.id))
+        db.session.commit()
+
+
+def test_replace_segment_with_fallback_overwrites_stored_opening(
+    app, interactive_service, test_user, test_character, mock_genai_client
+):
+    from backend.utils.content_moderator import build_safe_fallback_segment
+
+    with app.app_context():
+        db.session.merge(test_user)
+        db.session.merge(test_character)
+
+        mock_response = MagicMock()
+        mock_response.text = json.dumps(
+            {
+                "title": "REJECTED TITLE",
+                "content": "REJECTED CONTENT",
+                "is_ending": False,
+                "inventory": ["REJECTED ITEM"],
+                "story_state": {"location": "REJECTED PLACE", "goal": "REJECTED GOAL"},
+                "choices": [{"id": "choice_1", "text": "REJECTED CHOICE"}],
+            }
+        )
+        mock_genai_client.models.generate_content.return_value = mock_response
+
+        result = interactive_service.create_story(
+            user_id=test_user.id,
+            character_id=test_character.id,
+            theme="Adventure",
+            tone="fantasy",
+            length="short",
+        )
+        fallback = build_safe_fallback_segment(segment_number=1)
+        refreshed = interactive_service.replace_segment_with_fallback(
+            result["segment"]["id"], fallback, is_opening=True
+        )
+
+        stored = json.dumps(interactive_service.get_story(result["story_id"]))
+        assert "REJECTED" not in stored
+        assert "REJECTED" not in json.dumps(refreshed)
+        assert refreshed["title"] == fallback["title"]
+
+        db.session.delete(db.session.get(InteractiveStory, result["story_id"]))
+        db.session.commit()

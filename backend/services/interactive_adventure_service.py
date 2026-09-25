@@ -52,6 +52,16 @@ _PLACEHOLDER_CHOICE_RE = re.compile(
 )
 
 
+# StoryState columns holding model-written text.
+_STATE_TEXT_FIELDS = (
+    "current_location",
+    "current_goal",
+    "key_clues",
+    "companion_status",
+    "time_pressure",
+)
+
+
 class InteractiveAdventureService:
     """Service for creating and managing interactive adventure stories"""
 
@@ -76,6 +86,9 @@ class InteractiveAdventureService:
         Schnell chain the main story reader uses.
         """
         self._user_tier = user_tier
+        # Story state as it stood before the most recent continue_story() wrote
+        # the model's new state — lets replace_segment_with_fallback undo it.
+        self._state_before_last_segment: Optional[Dict[str, Any]] = None
 
     def create_story(
         self,
@@ -376,7 +389,15 @@ class InteractiveAdventureService:
             parent_choice_id = None
         else:
             # Load choice and mark as selected
-            choice = StoryChoice.query.filter_by(id=choice_id).first()
+            # The choice must belong to THIS story — choice IDs are not
+            # scoped by the caller's ownership check on the story alone.
+            choice = (
+                StoryChoice.query.join(
+                    StorySegment, StoryChoice.segment_id == StorySegment.id
+                )
+                .filter(StoryChoice.id == choice_id, StorySegment.story_id == story.id)
+                .first()
+            )
             if not choice:
                 raise ValueError(f"Choice {choice_id} not found")
 
@@ -495,6 +516,10 @@ class InteractiveAdventureService:
         self._update_inventory(story, new_inventory_names, next_segment_number)
 
         # Update state
+        if story.state:
+            self._state_before_last_segment = {
+                field: getattr(story.state, field) for field in _STATE_TEXT_FIELDS
+            }
         new_state_data = segment_data.get("story_state", {})
         self._update_state(story, new_state_data)
 
@@ -545,6 +570,77 @@ class InteractiveAdventureService:
         return {
             **story.to_dict(),
             "segments": [seg.to_dict() for seg in story.segments.all()],
+        }
+
+    def replace_segment_with_fallback(
+        self, segment_id: str, fallback: Dict[str, Any], is_opening: bool = False
+    ) -> Dict[str, Any]:
+        """Overwrite a persisted segment with safe fallback content.
+
+        create_story/continue_story commit the generated segment before the
+        route moderates it. When moderation rejects it, swapping only the
+        response body is not enough — the stored row is what GET/resume serve
+        and what the next prompt is built from. This rewrites the row, its
+        choices, and the other model-written text saved alongside it, and
+        returns the refreshed title/segment/inventory/state (the segment with
+        real choice IDs, so the fallback's buttons can be continued from).
+        """
+        segment = db.session.get(StorySegment, segment_id)
+        if not segment:
+            raise ValueError(f"Segment {segment_id} not found")
+        story = db.session.get(InteractiveStory, segment.story_id)
+
+        segment.title = fallback.get("title")
+        segment.content = fallback.get("content", "")
+        segment.word_count = len(segment.content.split())
+        segment.image_description = fallback.get("image_description")
+        segment.image_url = None
+        segment.output_type = fallback.get("output_type", "CHOICE")
+
+        for choice in segment.choices.all():
+            db.session.delete(choice)
+        for number, choice_data in enumerate(fallback.get("choices", []), start=1):
+            db.session.add(
+                StoryChoice(
+                    id=str(uuid.uuid4()),
+                    segment_id=segment.id,
+                    choice_number=number,
+                    text=choice_data.get("text"),
+                    consequence_type=None,
+                    is_selected=False,
+                )
+            )
+
+        if story:
+            if is_opening:
+                # The opening segment's title doubles as the story title.
+                story.title = fallback.get("title") or story.title
+            # Drop inventory items the rejected segment introduced.
+            for item in story.inventory.all():
+                if item.acquired_at_segment == segment.segment_number:
+                    db.session.delete(item)
+            if story.state:
+                previous = (
+                    {field: None for field in _STATE_TEXT_FIELDS}
+                    if is_opening
+                    else self._state_before_last_segment
+                )
+                if previous is not None:
+                    for field, value in previous.items():
+                        setattr(story.state, field, value)
+                    if story.state.key_clues is None:
+                        story.state.key_clues = []
+
+        db.session.commit()
+        return {
+            "title": story.title if story else None,
+            "segment": segment.to_dict(),
+            "inventory": (
+                [i.to_dict() for i in story.inventory.filter_by(is_active=True).all()]
+                if story
+                else []
+            ),
+            "state": story.state.to_dict() if story and story.state else None,
         }
 
     # Helper methods

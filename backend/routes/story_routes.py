@@ -7,7 +7,6 @@ import os
 import re
 import uuid
 
-import requests
 from celery.exceptions import TimeoutError as CeleryTimeoutError
 from flask import Blueprint, current_app, g, jsonify, request
 from flask_limiter.util import get_remote_address
@@ -40,6 +39,7 @@ from ..utils.ai_quota import (
 )
 from ..utils.audit import audit_log
 from ..utils.lazy_import import load_first_available
+from ..utils.safe_fetch import safe_get
 from ..utils.task_owner import cache_task_owner as _cache_task_owner
 from ..utils.task_owner import resolve_task_owner as _resolve_task_owner
 from ..utils.validators import (
@@ -448,6 +448,43 @@ def _scrub_segment_links(segment: dict) -> None:
         for c in choices:
             if isinstance(c, dict) and isinstance(c.get("text"), str):
                 c["text"] = scrub_external_links(c["text"])
+
+
+def _apply_flagged_fallback(
+    service, result: dict, fallback: dict, is_opening: bool
+) -> None:
+    """Replace a moderation-rejected interactive segment with *fallback*, in
+    the database as well as in the response.
+
+    The service commits the generated segment before the route moderates it,
+    so the stored row must be overwritten too — otherwise reloading or
+    resuming the story serves the rejected text, and the next prompt is built
+    from it. If the overwrite itself fails, the response still carries the
+    fallback so the child never sees the rejected text in this reply.
+    """
+    segment = result["segment"]
+    try:
+        refreshed = service.replace_segment_with_fallback(
+            segment["id"], fallback, is_opening=is_opening
+        )
+    except Exception:
+        db.session.rollback()
+        logger.exception(
+            "Could not overwrite flagged interactive segment %s", segment.get("id")
+        )
+        segment["content"] = fallback["content"]
+        segment["title"] = fallback["title"]
+        segment["image_description"] = fallback["image_description"]
+        segment["choices"] = fallback["choices"]
+        segment["image_url"] = None
+        return
+
+    result["segment"] = refreshed["segment"]
+    result["inventory"] = refreshed["inventory"]
+    if refreshed["state"] is not None:
+        result["state"] = refreshed["state"]
+    if is_opening and "title" in result:
+        result["title"] = refreshed["title"]
 
 
 def _antihero_gate(logger, endpoint: str, resolved_age: int | None = None):
@@ -2098,11 +2135,7 @@ def create_story_blueprint(
                     segment_number=1,
                     is_ending=bool(result.get("is_completed")),
                 )
-                result["segment"]["content"] = fallback["content"]
-                result["segment"]["title"] = fallback["title"]
-                result["segment"]["image_description"] = fallback["image_description"]
-                result["segment"]["choices"] = fallback["choices"]
-                result["segment"]["image_url"] = None
+                _apply_flagged_fallback(service, result, fallback, is_opening=True)
                 logger.warning(
                     "Interactive story opening replaced with safe fallback segment "
                     f"(story {result.get('story_id')})"
@@ -2336,11 +2369,7 @@ def create_story_blueprint(
                     is_opening=False,
                     is_ending=bool(result.get("is_completed")),
                 )
-                result["segment"]["content"] = fallback["content"]
-                result["segment"]["title"] = fallback["title"]
-                result["segment"]["image_description"] = fallback["image_description"]
-                result["segment"]["choices"] = fallback["choices"]
-                result["segment"]["image_url"] = None
+                _apply_flagged_fallback(service, result, fallback, is_opening=False)
                 logger.warning(
                     f"Interactive continuation replaced with safe fallback segment "
                     f"(story {story_id})"
@@ -2981,7 +3010,7 @@ def create_story_blueprint(
                                 f"Downloading illustration from {image_url[:50]}..."
                             )
                             # Stream the response to check size before loading into memory
-                            img_resp = requests.get(image_url, stream=True, timeout=10)
+                            img_resp = safe_get(image_url, stream=True, timeout=10)
                             img_resp.raise_for_status()
 
                             # Enforce 5MB limit via Content-Length header if available
@@ -3338,9 +3367,7 @@ def create_story_blueprint(
                                 logger.info(
                                     f"Downloading coloring page from {image_url[:50]}..."
                                 )
-                                img_resp = requests.get(
-                                    image_url, stream=True, timeout=10
-                                )
+                                img_resp = safe_get(image_url, stream=True, timeout=10)
                                 img_resp.raise_for_status()
 
                                 content_length = img_resp.headers.get("Content-Length")
