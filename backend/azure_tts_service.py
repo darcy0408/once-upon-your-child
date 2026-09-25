@@ -6,10 +6,11 @@ ElevenLabs) is not viable for a commercial kids' app — Gemini and ElevenLabs
 bar under-18 use, and the `edge-tts` package is an unofficial wrapper of Edge's
 "Read aloud" endpoint that Microsoft's own guidance says is NOT licensed for
 commercial use (they direct commercial users to Azure AI Speech). Azure AI
-Speech is the licensed replacement: the SAME neural voices as Edge "Read aloud"
-(so the audio is essentially unchanged), real-time synthesis that does NOT
-retain audio or use it to train models (strong COPPA posture), and word-boundary
-events for read-along highlighting parity with the Edge fallback.
+Speech is the licensed replacement: real-time synthesis that does NOT retain
+audio or use it to train models (strong COPPA posture), and word-boundary events
+for read-along highlighting parity with the Edge fallback. The mapping below
+started as the same voice names Edge "Read aloud" serves; the US entries have
+since been repointed to newer and HD voices, so the two are no longer identical.
 
 This mirrors ``edge_tts_service.EdgeTTSService``'s public shape so it drops into
 the same ``/tts/synthesize`` chain. The ``azure-cognitiveservices-speech`` SDK
@@ -33,22 +34,40 @@ except ImportError:
     AZURE_SPEECH_AVAILABLE = False
     speechsdk = None
 
-# Azure neural voice per curated ElevenLabs voice — identical voice names to the
-# Edge fallback (Edge "Read aloud" voices ARE Azure neural voices), so switching
-# the user's picked voice from Edge to Azure is audibly seamless. Keys mirror
-# CURATED_VOICES in elevenlabs_tts_service.py / _ELEVENLABS_TO_EDGE.
+# Azure neural voice per curated ElevenLabs voice. Keys mirror CURATED_VOICES in
+# elevenlabs_tts_service.py / _ELEVENLABS_TO_EDGE.
+#
+# The three US voices were repointed on 2026-09-23 after the owner listened to
+# the same paragraph in every candidate and ranked them (samples were rendered
+# from this exact mapping; the session record has the ranking). The older
+# Jenny/Aria/Guy voices stress words from a fixed lexicon and flatten questions;
+# the owner's report was that narration emphasized the wrong syllable and did
+# not convey meaning. Accented voices keep their accent — that is the whole
+# reason those picker entries exist — and childlike Ana is a different job.
+#
+# Callum uses a Dragon HD voice, which bills at a higher rate than the standard
+# neural voices (HD vs standard per-character pricing) and is NOT interchangeable
+# with an Edge voice name. Two HD behaviours here are MEASURED, not documented —
+# Microsoft's HD docs say <prosody> is unsupported and list word-boundary events
+# only for HD Omni, but a probe against this account on 2026-09-23 found that
+# en-US-Andrew:DragonHDLatestNeural honors `<prosody rate>` (a -25% request
+# produced ~49% more audio) and emits word-boundary events. Both are load-bearing
+# here: prosody carries the reading-speed control and word boundaries drive
+# read-along highlighting. If either silently regresses, Azure changed
+# undocumented behavior — re-probe before assuming this file is wrong.
 _ELEVENLABS_TO_AZURE = {
-    "XrExE9yKIg1WjnnlVkGX": "en-US-JennyNeural",  # Matilda — warm US female
-    "21m00Tcm4TlvDq8ikWAM": "en-US-AriaNeural",  # Rachel — calm US female
+    "XrExE9yKIg1WjnnlVkGX": "en-US-AvaMultilingualNeural",  # Matilda — warm US female
+    "21m00Tcm4TlvDq8ikWAM": "en-US-EmmaMultilingualNeural",  # Rachel — calm US female
     "ThT5KcBeYPX3keUQqHPh": "en-GB-SoniaNeural",  # Dorothy — British female
     "jBpfuIE2acCO8z3wKNLl": "en-US-AnaNeural",  # Gigi — childlike US female
     "JBFqnCBsd6RMkjVDRZzb": "en-GB-RyanNeural",  # George — British male
     "IKne3meq5aSn9XLyUdCD": "en-AU-WilliamNeural",  # Charlie — Australian male
-    "N2lVS1w4EtoT3dr4eOWO": "en-US-GuyNeural",  # Callum — US male
+    "N2lVS1w4EtoT3dr4eOWO": "en-US-Andrew:DragonHDLatestNeural",  # Callum — US male
     "D38z5RcWu1voky8WS1ja": "en-IE-ConnorNeural",  # Fin — Irish male
 }
 
-DEFAULT_AZURE_VOICE = "en-US-JennyNeural"
+# Matilda is the picker default, so this is the voice most stories are read in.
+DEFAULT_AZURE_VOICE = "en-US-AvaMultilingualNeural"
 
 
 def azure_voice_for(elevenlabs_voice_id: str) -> str:
