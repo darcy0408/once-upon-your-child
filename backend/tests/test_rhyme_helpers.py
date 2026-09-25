@@ -78,6 +78,54 @@ def test_ltr_rhyme_quality_accepts_multi_syllable_within_page_rhyme():
     assert _is_ltr_rhyme_quality_ok(pages)
 
 
+# The two age-8 stories MT-438 reproduced against `60bf10cd`, reduced to their
+# page-ending words. Both were rejected by the old check and regenerated twice
+# before shipping unchanged. One-line pages carry no sentence punctuation, so
+# the within-page fallback never fires and the couplet path is what is scored.
+_MT438_STORY_ONE_ENDINGS = [
+    "sun",
+    "fun",
+    "sound",
+    "ground",
+    "air",
+    "compare",
+    "deep",
+    "leap",
+    "free",
+    "glee",
+]
+
+_MT438_STORY_TWO_ENDINGS = [
+    "sky",
+    "spry",
+    "glee",
+    "see",
+    "free",
+    "carefree",
+    "ease",
+    "breeze",
+    "peace",
+    "release",
+]
+
+
+def _pages_ending_in(words):
+    return [f"Luna and the fox went out to play and found the {w}" for w in words]
+
+
+def test_mt438_reproduced_story_one_now_passes():
+    assert _is_ltr_rhyme_quality_ok(_pages_ending_in(_MT438_STORY_ONE_ENDINGS))
+
+
+def test_mt438_reproduced_story_two_now_passes():
+    # Passes on 3 of 5 pairs, which meets the 0.6 ratio exactly. The two that
+    # still miss are spelling-to-sound gaps the tail does not model: ease/breeze
+    # (final s is voiced, so "e:s" vs "e:z") and peace/release (soft c, so "e:c"
+    # vs "e:s"). Tracked as MT-448 — if that is fixed this becomes 5 of 5, and
+    # if the ratio is ever raised above 0.6 this story starts failing again.
+    assert _is_ltr_rhyme_quality_ok(_pages_ending_in(_MT438_STORY_TWO_ENDINGS))
+
+
 # ── Limerick Mode: one AABBA verse per page ───────────────────────────────
 
 _LIMERICK_PAGES = [
