@@ -13,7 +13,6 @@ import pytest
 from backend.tasks.story_tasks import (
     _is_limerick_page_ok,
     _is_ltr_rhyme_quality_ok,
-    _limerick_words_rhyme,
     _words_rhyme,
 )
 
@@ -50,6 +49,31 @@ def test_ltr_rhyme_quality_accepts_within_page_rhyme():
         "She climbed the hill. Her smile was still.",
         "A cat wore a hat. It sat on a mat.",
         "She made a hop. Then reached the top.",
+    ]
+    assert _is_ltr_rhyme_quality_ok(pages)
+
+
+def test_ltr_rhyme_quality_accepts_multi_syllable_couplets():
+    # MT-438: the Easy Reader check scored on the FIRST vowel, so a page
+    # ending in a multi-syllable word never matched its rhyme ("inside" →
+    # "insid" vs "wide" → "id"). Correctly rhyming stories were rejected,
+    # burning both retries and the extra generation on every age-8 story.
+    pages = [
+        "Luna found a door that was tall and wide.",
+        "A small sleepy fox was curled up inside.",
+        "They walked to the creaky garden gate.",
+        "The fox had a plan they would celebrate.",
+    ]
+    assert _is_ltr_rhyme_quality_ok(pages)
+
+
+def test_ltr_rhyme_quality_accepts_multi_syllable_within_page_rhyme():
+    # Same defect on the within-page sentence-ending path.
+    pages = [
+        "Luna stirred the soup with a spoon. Then she found a red balloon.",
+        "The fox ran up a sandy dune. He waved at the pale white moon.",
+        "They looked at the hills all around. Then sat on the cool soft ground.",
+        "A tiny mouse began to seek. They heard a happy little squeak.",
     ]
     assert _is_ltr_rhyme_quality_ok(pages)
 
@@ -156,11 +180,11 @@ def test_limerick_check_rejects_empty():
         ("quick", "stick"),  # qu is not a vowel
     ],
 )
-def test_limerick_rhyme_hears_long_vowels_across_spellings(word_a, word_b):
+def test_rhyme_hears_long_vowels_across_spellings(word_a, word_b):
     # 2026-09-13 probe: the spelling-only tail rejected most of the real
     # rhymes gpt-5-mini wrote (moon/tune, seek/squeak, dune/moon), and the
     # model's workaround was to rhyme a word with itself.
-    assert _limerick_words_rhyme(word_a, word_b)
+    assert _words_rhyme(word_a, word_b)
 
 
 @pytest.mark.parametrize(
@@ -175,8 +199,8 @@ def test_limerick_rhyme_hears_long_vowels_across_spellings(word_a, word_b):
         ("home", "big"),
     ],
 )
-def test_limerick_rhyme_keeps_short_vowels_apart_from_long(word_a, word_b):
-    assert not _limerick_words_rhyme(word_a, word_b)
+def test_rhyme_keeps_short_vowels_apart_from_long(word_a, word_b):
+    assert not _words_rhyme(word_a, word_b)
 
 
 def test_limerick_page_survives_one_weak_b_rhyme():
