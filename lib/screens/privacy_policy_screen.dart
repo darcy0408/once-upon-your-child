@@ -143,9 +143,9 @@ darcy@onceuponyourchild.app
               content: '''
 This app is operated by:
 
-- Operator (legal entity): Darcy VanPelt
+- Operator (legal entity): Once Upon YOUR Child! LLC
 - Postal address: 2816 Orchard Ave, Grand Junction, CO 81501
-- Phone: 970-640-2011
+- Phone: 970-462-9994
 - Email: darcy@onceuponyourchild.app
 
 As required by COPPA, contact us using the details above to review, delete, or stop further collection of your child's information.
