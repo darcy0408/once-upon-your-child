@@ -25,6 +25,17 @@ from backend.models import (
 
 
 @pytest.fixture(autouse=True)
+def allow_story_quota(mocker):
+    """The interactive opening now consumes the per-user story quota; keep
+    these tests independent of Redis/DB counts."""
+    check = mocker.patch(
+        "backend.routes.story_routes.check_daily_quota", return_value=(True, 0, 5, "")
+    )
+    increment = mocker.patch("backend.routes.story_routes.increment_daily_quota")
+    return check, increment
+
+
+@pytest.fixture(autouse=True)
 def mock_interactive_service(mocker):
     """Mock the InteractiveAdventureService for deterministic test responses."""
     service_instance = mocker.MagicMock()
@@ -275,6 +286,75 @@ class TestGenerateInteractiveStoryAPI:
         assert data["title"] == "A Gentle Pause"
         assert data["inventory"] == []
         assert "mysterious forest" not in response.get_data(as_text=True)
+
+    def test_create_interactive_story_counts_against_the_story_quota(
+        self, client, auth_headers, test_character_fixture, allow_story_quota
+    ):
+        check, increment = allow_story_quota
+        response = client.post(
+            "/generate-interactive-story",
+            headers=auth_headers,
+            json={"character_id": test_character_fixture.id, "length": "short"},
+        )
+        assert response.status_code == 200
+        check.assert_called_once()
+        increment.assert_called_once()
+
+    def test_create_interactive_story_returns_429_when_quota_exhausted(
+        self,
+        client,
+        auth_headers,
+        test_character_fixture,
+        mock_interactive_service,
+        allow_story_quota,
+    ):
+        check, increment = allow_story_quota
+        check.return_value = (False, 5, 5, "monthly")
+
+        response = client.post(
+            "/generate-interactive-story",
+            headers=auth_headers,
+            json={"character_id": test_character_fixture.id, "length": "short"},
+        )
+
+        assert response.status_code == 429
+        assert response.get_json()["code"] == "QUOTA_EXCEEDED"
+        mock_interactive_service.create_story.assert_not_called()
+        increment.assert_not_called()
+
+    def test_inventory_item_names_are_part_of_the_moderation_input(
+        self,
+        client,
+        auth_headers,
+        test_character_fixture,
+        mock_interactive_service,
+        mocker,
+    ):
+        mock_interactive_service.create_story.return_value["inventory"] = [
+            {"id": "i1", "name": "Suspicious Lantern", "is_active": True},
+            "Bare String Item",
+        ]
+        seen = []
+
+        def _moderate(text, age, **kwargs):
+            seen.append(text)
+            return True, ""
+
+        mocker.patch(
+            "backend.utils.content_moderator.moderate_story_content",
+            side_effect=_moderate,
+        )
+
+        response = client.post(
+            "/generate-interactive-story",
+            headers=auth_headers,
+            json={"character_id": test_character_fixture.id, "length": "short"},
+        )
+
+        assert response.status_code == 200
+        assert len(seen) == 1
+        assert "Suspicious Lantern" in seen[0]
+        assert "Bare String Item" in seen[0]
 
     def test_create_interactive_story_theme_defaults_to_adventure(
         self, client, auth_headers, test_character_fixture, mock_interactive_service

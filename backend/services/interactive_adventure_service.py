@@ -37,7 +37,7 @@ from backend.utils.ai_quota import (
     check_global_gen_budget,
     increment_global_gen,
 )
-from backend.utils.sanitizer import sanitize_model_segment
+from backend.utils.sanitizer import sanitize_model_segment, scrub_external_links
 
 logger = logging.getLogger(__name__)
 
@@ -802,6 +802,24 @@ class InteractiveAdventureService:
                 pages = _strip_lesson_endings(pages)
             if pages and pages[0].strip():
                 segment_data["content"] = pages[0]
+
+        # Link scrub on everything the child can see, BEFORE it is persisted:
+        # the route scrubs the response too, but the stored row is what a
+        # reload serves and what the next prompt is built from.
+        for key in ("content", "title"):
+            if isinstance(segment_data.get(key), str):
+                segment_data[key] = scrub_external_links(segment_data[key])
+        choices = segment_data.get("choices")
+        if isinstance(choices, list):
+            for choice in choices:
+                if isinstance(choice, dict) and isinstance(choice.get("text"), str):
+                    choice["text"] = scrub_external_links(choice["text"])
+        inventory = segment_data.get("inventory")
+        if isinstance(inventory, list):
+            segment_data["inventory"] = [
+                scrub_external_links(item) if isinstance(item, str) else item
+                for item in inventory
+            ]
         return segment_data
 
     def _generate_segment_with_retry(

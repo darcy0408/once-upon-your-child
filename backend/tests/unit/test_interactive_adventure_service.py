@@ -1287,3 +1287,42 @@ def test_replace_segment_with_fallback_overwrites_stored_opening(
 
         db.session.delete(db.session.get(InteractiveStory, result["story_id"]))
         db.session.commit()
+
+
+def test_links_are_scrubbed_before_a_segment_is_stored(
+    app, interactive_service, test_user, test_character, mock_genai_client
+):
+    """The route scrubs the response; the stored row must be clean too, since
+    a reload serves it and the next prompt is built from it."""
+    with app.app_context():
+        db.session.merge(test_user)
+        db.session.merge(test_character)
+
+        mock_response = MagicMock()
+        mock_response.text = json.dumps(
+            {
+                "title": "Visit https://evil-site.com today",
+                "content": "The hero found a note: go to www.evil-site.com/prize now.",
+                "is_ending": False,
+                "inventory": ["Map to evil-site.com"],
+                "story_state": {"location": "Forest"},
+                "choices": [{"id": "choice_1", "text": "Email help@evil-site.com"}],
+            }
+        )
+        mock_genai_client.models.generate_content.return_value = mock_response
+
+        result = interactive_service.create_story(
+            user_id=test_user.id,
+            character_id=test_character.id,
+            theme="Adventure",
+            tone="fantasy",
+            length="short",
+        )
+
+        stored = json.dumps(interactive_service.get_story(result["story_id"]))
+        assert "evil-site.com" not in stored
+        assert "evil-site.com" not in json.dumps(result)
+        assert "The hero found a note" in stored
+
+        db.session.delete(db.session.get(InteractiveStory, result["story_id"]))
+        db.session.commit()
