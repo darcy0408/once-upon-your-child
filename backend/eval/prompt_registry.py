@@ -177,7 +177,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T5_BEDTIME",
-        content_hash="1616846927f93e82",
+        content_hash="233db7a2010a2a07",
         source_file="backend/services/story_service.py",
         anchors=("_build_bedtime_prompt",),
         mode="bedtime",
