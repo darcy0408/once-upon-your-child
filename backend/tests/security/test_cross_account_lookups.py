@@ -119,3 +119,62 @@ def test_continue_story_rejects_a_choice_from_a_different_story(
         for story in (mine, theirs):
             db.session.delete(db.session.get(InteractiveStory, story.id))
         db.session.commit()
+
+
+# ---------------------------------------------------------------------------
+# A character with no owner is nobody's: it must not be readable, editable,
+# or usable for generation by an arbitrary signed-in account.
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def ownerless_character(app):
+    with app.app_context():
+        character = Character(id="char_ownerless", user_id=None, name="Nobody", age=6)
+        db.session.add(character)
+        db.session.commit()
+        yield character
+        row = db.session.get(Character, "char_ownerless")
+        if row is not None:
+            db.session.delete(row)
+            db.session.commit()
+
+
+def test_ownerless_character_cannot_be_read_edited_or_deleted(
+    client, auth_headers, test_user, ownerless_character
+):
+    assert (
+        client.get("/characters/char_ownerless", headers=auth_headers).status_code
+        == 403
+    )
+    assert (
+        client.put(
+            "/characters/char_ownerless",
+            json={"name": "Mine now"},
+            headers=auth_headers,
+        ).status_code
+        == 403
+    )
+    assert (
+        client.delete("/characters/char_ownerless", headers=auth_headers).status_code
+        == 403
+    )
+
+
+def test_ownerless_character_cannot_be_used_to_generate_a_story(
+    client, auth_headers, test_user, ownerless_character, mocker
+):
+    mocker.patch(
+        "backend.routes.story_routes.check_daily_quota", return_value=(True, 0, 5, "")
+    )
+    task = mocker.patch("backend.routes.story_routes.generate_story_task")
+
+    response = client.post(
+        "/generate-story",
+        json={"character_id": "char_ownerless", "theme": "Adventure"},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 403
+    task.delay.assert_not_called()
+    task.apply_async.assert_not_called()
