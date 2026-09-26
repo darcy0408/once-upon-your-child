@@ -169,7 +169,7 @@ def create_character_blueprint(limiter, logger):
         char = db.session.get(Character, char_id)
         if not char:
             return jsonify({"error": "Character not found"}), 404
-        if char.user_id and str(char.user_id) != str(request.current_user.id):
+        if char.user_id is None or str(char.user_id) != str(request.current_user.id):
             return jsonify({"error": "Unauthorized"}), 403
 
         data = request.get_json(silent=True) or {}
@@ -187,7 +187,7 @@ def create_character_blueprint(limiter, logger):
         char = db.session.get(Character, char_id)
         if not char:
             return jsonify({"error": "Character not found"}), 404
-        if char.user_id and str(char.user_id) != str(request.current_user.id):
+        if char.user_id is None or str(char.user_id) != str(request.current_user.id):
             return jsonify({"error": "Unauthorized"}), 403
 
         response, status_code = character_service.delete_character(char_id)
@@ -215,7 +215,7 @@ def create_character_blueprint(limiter, logger):
         char = db.session.get(Character, char_id)
         if not char:
             return jsonify({"error": "Character not found"}), 404
-        if char.user_id and str(char.user_id) != str(request.current_user.id):
+        if char.user_id is None or str(char.user_id) != str(request.current_user.id):
             return jsonify({"error": "Unauthorized"}), 403
 
         response, status_code = character_service.get_character(char_id)

@@ -430,6 +430,26 @@ def _crisis_guard(logger, endpoint: str, user_id, *texts) -> dict | None:
     return None
 
 
+def _limit_key() -> str:
+    """Rate-limit per signed-in user rather than per IP: a family shares one
+    address, and every route using this already requires auth."""
+    user = getattr(request, "current_user", None)
+    return str(user.id) if user else get_remote_address()
+
+
+def _inventory_names(result: dict) -> list:
+    """Model-written inventory item names in a service result -- the child
+    sees these in the inventory drawer, so they go through moderation with
+    the rest of the segment text. Items may be dicts (persisted rows) or
+    bare strings."""
+    names = []
+    for item in result.get("inventory") or []:
+        name = item.get("name") if isinstance(item, dict) else item
+        if isinstance(name, str) and name.strip():
+            names.append(name)
+    return names
+
+
 def _scrub_segment_links(segment: dict) -> None:
     """Deterministic egress scrub on child-visible interactive-segment fields
     (red-team F-4). `scrub_external_links` ran only on the main single-shot
@@ -979,7 +999,7 @@ def create_story_blueprint(
             char = db.session.get(Character, character_id)
             if not char:
                 return jsonify({"error": "Character not found"}), 404
-            if char.user_id and str(char.user_id) != str(user_id):
+            if char.user_id is None or str(char.user_id) != str(user_id):
                 logger.warning(
                     f"IDOR attempt: User {user_id} tried to generate story for character {character_id}"
                 )
@@ -1385,7 +1405,7 @@ def create_story_blueprint(
             char = db.session.get(Character, character_id)
             if not char:
                 return jsonify({"error": "Character not found"}), 404
-            if char.user_id and str(char.user_id) != str(user_id):
+            if char.user_id is None or str(char.user_id) != str(user_id):
                 logger.warning(
                     f"IDOR attempt: User {user_id} tried to generate antihero "
                     f"story for character {character_id}"
@@ -1940,7 +1960,7 @@ def create_story_blueprint(
         return jsonify({"status": "redis_unavailable"}), 503
 
     @story_bp.route("/generate-interactive-story", methods=["POST"])
-    @limiter.limit("5 per minute")  # Rate limit for interactive story start
+    @limiter.limit("5 per minute", key_func=_limit_key)
     @require_auth
     @require_parental_consent
     def generate_interactive_story_endpoint():
@@ -1978,6 +1998,38 @@ def create_story_blueprint(
 
         # Enforce authenticated user ID
         user_id = request.current_user.id
+        user_tier = getattr(request.current_user, "subscription_tier", "free") or "free"
+
+        # Same per-user story quota as /generate-story: an interactive opening
+        # is a story. Continuations ride on this opening (see the daily
+        # ceiling on /continue-interactive-story).
+        allowed, current_count, daily_limit, quota_period = check_daily_quota(
+            user_id, user_tier
+        )
+        if not allowed:
+            audit_log(
+                "ai_quota_exceeded",
+                user_id=user_id,
+                data={
+                    "tier": user_tier,
+                    "count": current_count,
+                    "limit": daily_limit,
+                    "period": quota_period,
+                    "kind": "interactive",
+                },
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "Daily story limit reached",
+                        "code": "QUOTA_EXCEEDED",
+                        "limit": daily_limit,
+                        "used": current_count,
+                        "message": _daily_quota_message(quota_period),
+                    }
+                ),
+                429,
+            )
 
         character_id = payload.get("character_id")
 
@@ -1987,7 +2039,7 @@ def create_story_blueprint(
             char = db.session.get(Character, character_id)
             if not char:
                 return jsonify({"error": "Character not found"}), 404
-            if char.user_id and str(char.user_id) != str(user_id):
+            if char.user_id is None or str(char.user_id) != str(user_id):
                 logger.warning(
                     f"IDOR attempt: User {user_id} tried to generate interactive story for character {character_id}"
                 )
@@ -2083,6 +2135,7 @@ def create_story_blueprint(
                     filtered_content,
                     result["segment"].get("title", ""),
                     *[c.get("text", "") for c in result["segment"].get("choices", [])],
+                    *_inventory_names(result),
                 ]
             )
             _, title_choices_flagged = filter_story_content(
@@ -2093,6 +2146,7 @@ def create_story_blueprint(
                             c.get("text", "")
                             for c in result["segment"].get("choices", [])
                         ],
+                        *_inventory_names(result),
                     ]
                 ),
                 age,
@@ -2159,6 +2213,7 @@ def create_story_blueprint(
                     current_app._get_current_object(), result["segment"]["id"]
                 )
 
+            increment_daily_quota(user_id, user_tier)
             logger.info(f"Interactive story created: {result['story_id']}")
             return jsonify(result), 200
 
@@ -2191,7 +2246,9 @@ def create_story_blueprint(
             )
 
     @story_bp.route("/continue-interactive-story", methods=["POST"])
-    @limiter.limit("5 per minute")  # Rate limit for continuing interactive stories
+    # Continuations are not counted against the story quota (the opening
+    # is), so a per-user daily ceiling bounds what one account can spend.
+    @limiter.limit("5 per minute;200 per day", key_func=_limit_key)
     @require_auth
     @require_parental_consent
     def continue_interactive_story_endpoint():
@@ -2315,6 +2372,7 @@ def create_story_blueprint(
                     filtered_content,
                     result["segment"].get("title", ""),
                     *[c.get("text", "") for c in result["segment"].get("choices", [])],
+                    *_inventory_names(result),
                 ]
             )
             _, title_choices_flagged = filter_story_content(
@@ -2325,6 +2383,7 @@ def create_story_blueprint(
                             c.get("text", "")
                             for c in result["segment"].get("choices", [])
                         ],
+                        *_inventory_names(result),
                     ]
                 ),
                 story_age,
