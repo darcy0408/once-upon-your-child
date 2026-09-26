@@ -654,6 +654,7 @@ The final image must read as {stylization_register} — NOT a retouched, filtere
                 _executor.shutdown(wait=False, cancel_futures=True)
 
             if isinstance(result, dict):
+                result = self._clean_photo_descriptors(result)
                 if result:
                     logger.info(f"Photo analysis extracted: {result}")
                 return result
@@ -661,6 +662,39 @@ The final image must read as {stylization_register} — NOT a retouched, filtere
         except Exception as e:
             logger.warning(f"Photo feature extraction failed (non-fatal): {e}")
             return {}
+
+    # The three descriptor keys the prompt template and the saved character
+    # attributes actually consume. Anything else the vision model returns is
+    # dropped.
+    _PHOTO_DESCRIPTOR_KEYS = ("hair_style", "skin_tone", "distinguishing")
+
+    @classmethod
+    def _clean_photo_descriptors(cls, raw: dict) -> dict:
+        """Sanitize and cap the vision model's descriptor strings.
+
+        The descriptors are MODEL-authored text derived from an uploaded photo
+        (a data source the app doesn't control), and they are interpolated
+        into the avatar prompt and persisted on the character, where later
+        story-illustration prompts read them back (image_prompt_helpers).
+        That is the same round-trip shape as the Pick-a-Path segment state
+        (MT-411 F3), so it gets the same treatment: ``sanitize_model_text``
+        plus the avatar free-text cap the parent-typed fields already use.
+        Non-string values and unknown keys are dropped.
+        """
+        try:
+            from backend.utils.sanitizer import sanitize_model_text
+        except ImportError:
+            from utils.sanitizer import sanitize_model_text
+
+        cleaned = {}
+        for key in cls._PHOTO_DESCRIPTOR_KEYS:
+            value = raw.get(key)
+            if not isinstance(value, str):
+                continue
+            value = sanitize_model_text(value, MAX_AVATAR_FREE_TEXT)
+            if value:
+                cleaned[key] = value
+        return cleaned
 
     def _extract_base64_from_results(
         self, results: Optional[List[Dict]]
