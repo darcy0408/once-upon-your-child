@@ -2990,6 +2990,40 @@ This chapter is being read aloud at bedtime. It must wind the listener DOWN, not
 """
 
 
+def _build_bedtime_feelings_block(
+    feelings_prompt: str | None, age: int, character: str
+) -> str:
+    """Tonight's-feeling guidance for bedtime stories.
+
+    Unlike _build_feelings_instruction (daytime: the coping action drives the
+    plot), bedtime holds the feeling instead of solving it, so it never fights
+    the REDUCED STIMULATION and SLEEP TRANSITION rules.
+    """
+    if not feelings_prompt:
+        return ""
+    if age <= 5:
+        words = (
+            "Use one feeling word a 4-5 year old knows (sad, scared, mad, lonely) "
+            "in a short sentence."
+        )
+    elif age <= 8:
+        words = (
+            "Name the feeling plainly and give one body clue "
+            "(a tight tummy, a lump in the throat)."
+        )
+    else:
+        words = "Name the feeling honestly; it can be mixed or complicated."
+    return f"""
+TONIGHT'S FEELING (shared by the grown-up saying goodnight):
+{feelings_prompt}
+- In the first page or two, {character} notices this feeling. {words} The feeling is okay.
+- Do not turn the feeling into a quest or a problem to fix. The story holds it; it does not chase it.
+- Show {character} doing one small comfort a child could copy in bed tonight: a slow breath, holding something soft, thinking of someone they love.
+- As the story slows, let the feeling grow smaller and quieter. It may still be there at the end, held and safe.
+- Never state a lesson and never make the feeling bigger or scarier.
+"""
+
+
 def _build_bedtime_prompt(
     character_name,
     age,
@@ -3002,6 +3036,8 @@ def _build_bedtime_prompt(
     extra_characters=None,
     story_length="standard",
     duration_minutes: int | None = None,
+    feelings_prompt: str | None = None,
+    comfort_item: str | None = None,
 ):
     """
     Build a high-quality bedtime story prompt.
@@ -3096,6 +3132,15 @@ def _build_bedtime_prompt(
     }
     tone_hint = mood_hints.get(mood.lower().strip(), mood_hints["calming"])
 
+    # Tonight's feeling and comfort item (both optional; absent → prompt unchanged).
+    feelings_block = _build_bedtime_feelings_block(feelings_prompt, age, character_name)
+    comfort_block = (
+        f"\nCOMFORT ITEM: {character_name} sleeps with {comfort_item}. "
+        "Let it appear once, warmly, in the last pages.\n"
+        if comfort_item
+        else ""
+    )
+
     return f"""You are a master bedtime storyteller. Create a magical, soothing bedtime story for the following listeners:
 
 HEROES (ALL MUST APPEAR BY NAME): {heroes_str}
@@ -3112,7 +3157,7 @@ AUDIENCE AGE: {age} years old
 AGE CALIBRATION: {age_notes}
 
 WORD COUNT: {word_range[0]}–{word_range[1]} words total across all pages.
-
+{feelings_block}{comfort_block}
 ━━━ BEDTIME STORY RULES (MANDATORY) ━━━
 
 {opening_block}1. SOOTHING PACING

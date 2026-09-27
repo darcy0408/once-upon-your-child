@@ -2153,6 +2153,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     companion_characters=companion_character_details,
                     story_length=story_length,
                     duration_minutes=kwargs.get("bedtime_duration_minutes"),
+                    feelings_prompt=kwargs.get("feelings_prompt"),
+                    comfort_item=char_details.get("comfort_item")
+                    or char_details.get("comfortItem"),
                 )
             elif learning_to_read_mode:
 
