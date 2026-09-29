@@ -67,6 +67,29 @@ def test_trailing_parenthetical_labels_removed():
     )
 
 
+def test_combined_parenthetical_labels_removed():
+    # Two or more buckets in one caption, seen live 2026-09-28 through the
+    # MCP server. The separator varies: "/", ",", "and".
+    content = (
+        "His bark makes bell-sounds that answer the hum (dialogue/action). "
+        "He presses his head against the shell to warm it (action, bond). "
+        "Pip wags (Action and Dialogue). "
+        "Pip tugs the strap free (help + bond)."
+    )
+    assert _strip_companion_beat_labels(content) == (
+        "His bark makes bell-sounds that answer the hum. "
+        "He presses his head against the shell to warm it. "
+        "Pip wags. "
+        "Pip tugs the strap free."
+    )
+
+
+def test_label_word_mixed_with_other_words_untouched():
+    # Only a parenthetical made up of nothing but bucket words is a label.
+    page = "She hugged it (comfort blanket) and took one action (a big one)."
+    assert _strip_companion_beat_labels(page) == page
+
+
 def test_vocabulary_glosses_untouched():
     # Bedtime and Explorer prose gloss new words in parentheses on purpose.
     page = "The pebble was luminescent (gently glowing) and cool (not warm)."
