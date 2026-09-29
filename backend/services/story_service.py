@@ -1827,11 +1827,20 @@ _COMPANION_BEAT_LABEL_PATTERN = re.compile(
 # The same enum leaking as a trailing caption instead of a prefix: "Pip
 # snuffles the egg (action). Pip barks a bright tune (dialogue). Pip nudges
 # your hand (bond)." Observed live on prod 2026-09-26 (Explorer segments,
-# opening and continuation, read through the MCP server). Only these four
-# words in their own parentheses; vocabulary glosses such as "luminescent
-# (gently glowing)" are multi-word and stay.
+# opening and continuation, read through the MCP server). The labels also
+# arrive joined -- "(dialogue/action)", "(action, bond)", "(action and
+# dialogue)" -- seen live 2026-09-28, so the parenthetical matches when it is
+# made up of nothing but these four words. A parenthetical that mixes a label
+# word with anything else stays: vocabulary glosses such as "luminescent
+# (gently glowing)" and real phrases such as "(comfort blanket)" are content.
+_COMPANION_BEAT_WORD = r"(?:action|dialogue|bond|help)"
 _COMPANION_BEAT_PAREN_PATTERN = re.compile(
-    r"\s*\((?:action|dialogue|bond|help)\)", re.IGNORECASE
+    r"\s*\(\s*"
+    + _COMPANION_BEAT_WORD
+    + r"(?:\s*(?:[/,+&]|and)\s*"
+    + _COMPANION_BEAT_WORD
+    + r")*\s*\)",
+    re.IGNORECASE,
 )
 
 
