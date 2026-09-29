@@ -419,7 +419,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     # it is not in MODES and is never passed to prompt_versioning.resolve().
     PromptTemplate(
         template_id="T14_INTERACTIVE_OPENING",
-        content_hash="25e65a4522d55d15",
+        content_hash="d0846da9dcd73d79",
         source_file="backend/services/interactive_adventure_prompt_builder.py",
         anchors=("InteractiveAdventurePromptBuilder.build_opening_prompt",),
         mode="pick_a_path",
@@ -458,7 +458,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T15_INTERACTIVE_CONTINUATION",
-        content_hash="17a42a2e0f843d7d",
+        content_hash="611cf719ac3f525b",
         source_file="backend/services/interactive_adventure_prompt_builder.py",
         anchors=("InteractiveAdventurePromptBuilder.build_continuation_prompt",),
         mode="pick_a_path",
