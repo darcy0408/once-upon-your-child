@@ -1824,17 +1824,30 @@ _COMPANION_BEAT_LABEL_PATTERN = re.compile(
     r"(?:^|(?<=[.!?]\s))(?:[Aa]ction|[Dd]ialogue|[Bb]ond|[Hh]elp)\s*[:—–-]\s*"
 )
 
+# The same enum leaking as a trailing caption instead of a prefix: "Pip
+# snuffles the egg (action). Pip barks a bright tune (dialogue). Pip nudges
+# your hand (bond)." Observed live on prod 2026-09-26 (Explorer segments,
+# opening and continuation, read through the MCP server). Only these four
+# words in their own parentheses; vocabulary glosses such as "luminescent
+# (gently glowing)" are multi-word and stay.
+_COMPANION_BEAT_PAREN_PATTERN = re.compile(
+    r"\s*\((?:action|dialogue|bond|help)\)", re.IGNORECASE
+)
+
 
 def _strip_companion_beat_labels(content: str) -> str:
     """Excise leaked companion_beats JSON-schema labels from segment prose.
 
     Unlike ``_strip_meta_leakage`` (which drops whole sentences), the label
-    prefix is excised so the real content of the sentence survives:
+    is excised so the real content of the sentence survives, whether it came
+    as a prefix or a trailing caption:
     "Action: Twiggle taps the pebble." -> "Twiggle taps the pebble."
+    "Pip snuffles the egg (action)."   -> "Pip snuffles the egg."
     """
     if not content:
         return content
-    return _COMPANION_BEAT_LABEL_PATTERN.sub("", content)
+    content = _COMPANION_BEAT_LABEL_PATTERN.sub("", content)
+    return _COMPANION_BEAT_PAREN_PATTERN.sub("", content)
 
 
 # "A moment of wonder: You look up and..." — the interactive builder's old
