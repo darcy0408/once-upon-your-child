@@ -53,6 +53,26 @@ def test_ordinary_prose_untouched():
         assert _strip_companion_beat_labels(page) == page
 
 
+def test_trailing_parenthetical_labels_removed():
+    # The caption form, observed on prod 2026-09-26 in Explorer segments.
+    content = (
+        "Pip snuffles the egg (action). Pip barks a bright tune (Dialogue). "
+        "Pip nudges your hand so you pet the warm shell (bond). "
+        "Pip drops a crumb of map at your feet to help (help)."
+    )
+    assert _strip_companion_beat_labels(content) == (
+        "Pip snuffles the egg. Pip barks a bright tune. "
+        "Pip nudges your hand so you pet the warm shell. "
+        "Pip drops a crumb of map at your feet to help."
+    )
+
+
+def test_vocabulary_glosses_untouched():
+    # Bedtime and Explorer prose gloss new words in parentheses on purpose.
+    page = "The pebble was luminescent (gently glowing) and cool (not warm)."
+    assert _strip_companion_beat_labels(page) == page
+
+
 def test_empty_content_returned_as_is():
     assert _strip_companion_beat_labels("") == ""
     assert _strip_companion_beat_labels(None) is None
