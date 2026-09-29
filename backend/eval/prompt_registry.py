@@ -38,7 +38,15 @@ SNAPSHOT_DATE = "2026-08-03"
 AGE_BANDS = ("3-4", "5-7", "8-10", "11-13", "13-15", "15-18", "adult")
 
 # Code-side mode names. Pick-a-Path / Interactive is a different endpoint
-# (not story_service.py); excluded from this registry. See finding F-05.
+# (not story_service.py) that dispatches on builder function, not a mode
+# string, so it never joins this vocabulary. F-05 originally found it had NO
+# registry coverage at all (no drift detection on its Companion Contract
+# wording, among other things); T14/T15 below close that gap. It still has no
+# entry here in MODES, and it stays out of SENDABLE_TEMPLATE_IDS, because nothing
+# calls backend/services/prompt_versioning.py for this endpoint — there is no
+# runtime revision-hash attribution to agree with (see TestRegistriesAgree in
+# test_prompt_snapshot_anchors.py). That production-attribution gap is a
+# separate, still-open concern from the drift-detection gap F-05 identified.
 MODES = (
     "standard",
     "ltr_limerick",
@@ -403,13 +411,93 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         interpolated_vars=("character_id",),
         description="Recall of prior themes/cast; vary or build on rather than repeat.",
     ),
+    # T14/T15 — Pick-a-Path / Interactive Adventure (MT-453, closing F-05's
+    # drift-coverage gap). Different endpoint from story_service.py: a single
+    # builder method handles every age band via InteractiveAdventurePromptBuilder
+    # .AGE_BANDS, same shape as T1's single-function-for-all-bands pattern, so
+    # one anchor each is enough. mode="pick_a_path" is a registry-only label —
+    # it is not in MODES and is never passed to prompt_versioning.resolve().
+    PromptTemplate(
+        template_id="T14_INTERACTIVE_OPENING",
+        content_hash="d0846da9dcd73d79",
+        source_file="backend/services/interactive_adventure_prompt_builder.py",
+        anchors=("InteractiveAdventurePromptBuilder.build_opening_prompt",),
+        mode="pick_a_path",
+        age_bands=AGE_BANDS,
+        builder_function="InteractiveAdventurePromptBuilder.build_opening_prompt",
+        output_format=(
+            "json: title, output_type, segment_number, stage_label, content, "
+            "word_count, image_description, companion_beats[], inventory, "
+            "inventory_references, story_state, choices[], is_ending"
+        ),
+        interpolated_vars=(
+            "child_name",
+            "age",
+            "length",
+            "theme",
+            "tone",
+            "character",
+            "companions",
+            "spark_tool",
+            "mood_physics",
+            "conflict_hook",
+            "sensory_palette",
+            "world_bible",
+            "life_challenge",
+            "personality_sliders",
+            "chronicle_context",
+            "big_feelings_context",
+        ),
+        description=(
+            "Pick-A-Path opening segment; second-person voice; age-calibrated "
+            "choices; Companion Contract requires 3+ behavioral beats "
+            "including a help-type and a bond-type moment, described in plain "
+            "prose with no inline type labels (MT-453) — the type taxonomy "
+            "lives only in the companion_beats JSON field below it."
+        ),
+    ),
+    PromptTemplate(
+        template_id="T15_INTERACTIVE_CONTINUATION",
+        content_hash="611cf719ac3f525b",
+        source_file="backend/services/interactive_adventure_prompt_builder.py",
+        anchors=("InteractiveAdventurePromptBuilder.build_continuation_prompt",),
+        mode="pick_a_path",
+        age_bands=AGE_BANDS,
+        builder_function="InteractiveAdventurePromptBuilder.build_continuation_prompt",
+        output_format=(
+            "json: title, output_type, segment_number, stage_label, content, "
+            "word_count, image_description, companion_beats[], inventory, "
+            "inventory_references, story_state, choices[], is_ending"
+        ),
+        interpolated_vars=(
+            "story_context",
+            "selected_choice",
+            "current_segment_number",
+            "inventory",
+            "story_state",
+            "story_so_far",
+        ),
+        description=(
+            "Pick-A-Path continuation segment; choice-driven consequence; "
+            "same Companion Contract as T14, described behaviorally with no "
+            "inline beat-type labels (MT-453)."
+        ),
+    ),
 )
 
 
-# Templates that are directly sent to the LLM as a complete prompt.
-# T8_SAFETY_GUARDRAILS/T9_STRICT_OUTPUT (static injections) and T11/T12/T13
-# (conditional injections) are fragments composed into T1 — they don't define
-# independent cells.
+# Templates that are directly sent to the LLM as a complete prompt AND have a
+# runtime revision-hash counterpart in backend/services/prompt_versioning.py
+# (see TestRegistriesAgree.test_every_sendable_template_has_a_runtime_hash in
+# test_prompt_snapshot_anchors.py, which enforces that equality). T8_SAFETY_
+# GUARDRAILS/T9_STRICT_OUTPUT (static injections) and T11/T12/T13 (conditional
+# injections) are excluded as fragments composed into T1 — they don't define
+# independent cells. T14/T15 (Pick-a-Path) are excluded for a different
+# reason: they ARE complete, directly-sent prompts, but their endpoint never
+# calls prompt_versioning.resolve(), so there is no runtime hash for them to
+# agree with — adding them here would just make that test fail. They still
+# get full drift detection via TEMPLATES/content_hash; they just don't define
+# (mode, age_band) cells for the eval harness.
 SENDABLE_TEMPLATE_IDS = frozenset(
     {
         "T1_STANDARD",
