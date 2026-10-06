@@ -1198,6 +1198,7 @@ class AdvancedStoryEngine:
         story_duration: str | None = None,
         age: int = 5,
         prior_adventures_block: str = "",
+        scene_residents_line: str = "",
     ):
         # Validation
         age = validate_age(age)
@@ -1658,6 +1659,12 @@ BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule b
 
         opening_rule = _get_opening_rule(age)
         sensory_palette = sensory_palette or _pick_sensory_palette(age)
+        # Chunk 4: who lives in the picked scene (+ a return-visit line). Sits
+        # beside the WORLD BIBLE, deliberately outside COMPANIONS so residents
+        # never reach the MANDATORY names checklist. Empty -> prompt unchanged.
+        scene_residents_suffix = (
+            "\n" + scene_residents_line if scene_residents_line else ""
+        )
 
         # Chunk-7b: the recall block renders directly under the persona line —
         # story_tasks used to PREPEND it to the finished prompt, putting a data
@@ -1671,7 +1678,7 @@ You are creating a {story_length} story for {character}{gender_text} (age {age})
 - **THEME**: {theme}
 - **CONFLICT**: {conflict_hook or ('A tension at the heart of the theme comes to a head and must be faced — as grounded or as strange as the theme calls for.' if age >= 13 else 'A magical mystery needs solving.')}
 - **SENSORY PALETTE** (atmosphere seasoning — flavor scenes with it, but it must never drive the plot, and its wording must never be copied into the story text verbatim — reimagine the images in your own words): {sensory_palette}
-{('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + world_bible) if world_bible else ''}
+{('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + world_bible) if world_bible else ''}{scene_residents_suffix}
 - **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}{(', Passions: ' + interests) if interests else ''}).
 {('- **SPECIAL ABILITY**: ' + special_ability + ' (MUST be used at the climax as the decisive turning point).') if special_ability else '- **SPECIAL ABILITY**: None — hero relies on wit, kindness, and courage.'}
 - **CHARACTER VOICE**: {character} approaches problems using their strengths ({strengths or 'bravery and kindness'}). Let this shape how they think, speak, and act throughout — not just at the climax. A problem-solver notices clues; a healer checks on others first; an adventurer rushes in then reflects.
@@ -1865,9 +1872,11 @@ def _strip_companion_beat_labels(content: str) -> str:
 # caption (owner screenshot, 2026-09-13, MT-418). The prompt line has been
 # rewritten in plain words; this nets the stragglers. The colon/dash right
 # after the phrase keeps an ordinary "a moment of wonder washed over you"
-# untouched — only the caption form is excised.
+# untouched — only the caption form is excised. Chunk 4 adds the two
+# scene-residents headings ("Who lives here", "Been here before") pre-emptively.
 _PROMPT_HEADING_LABEL_PATTERN = re.compile(
-    r"(?:^|(?<=[.!?]\s)|(?<=\n))(?:[Aa] )?(?:[Mm]oment of [Ww]onder|[Cc]oping [Mm]oment)\s*[:—–-]\s*"
+    r"(?:^|(?<=[.!?]\s)|(?<=\n))(?:[Aa] )?(?:[Mm]oment of [Ww]onder|[Cc]oping [Mm]oment"
+    r"|[Ww]ho [Ll]ives [Hh]ere|[Bb]een [Hh]ere [Bb]efore)\s*[:—–-]\s*"
 )
 
 
