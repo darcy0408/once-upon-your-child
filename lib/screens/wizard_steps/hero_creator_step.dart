@@ -23,6 +23,7 @@ import '../../widgets/magic_star_cursor.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/user_identity_service.dart';
 import '../../services/isar_service.dart';
+import '../../services/progression_service.dart';
 import '../../models/local/character_local.dart';
 import '../../services/avatar_generation_state.dart';
 import '../../services/caregiver_service.dart';
@@ -110,6 +111,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   GeneratedAvatar? _generatedAvatar;
   String? _customAvatarFilePath;
   bool _isPremium = false;
+
+  /// Stories this device has created so far (`ProgressionService`). Null until
+  /// loaded. Drives the first-story fast path: a brand-new hero on a device
+  /// with zero stories skips the hero-type and story-kind pages.
+  int? _storiesCreated;
+
+  /// First run = creating a NEW hero and no story has ever been created.
+  bool get _isFirstRunFastPath => _isCreatingNew && _storiesCreated == 0;
 
   /// MT-151: lifetime count of AI photo-avatars this account has generated,
   /// fetched from the backend's `feature-unlocks` endpoint. Every account gets
@@ -221,6 +230,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       widget.wizardData.characterGender = 'Girl';
     }
     _hydrateAgeFromSavedPreference();
+    unawaited(_loadStoriesCreated());
     _nameController = TextEditingController(
       text: widget.wizardData.characterName,
     );
@@ -472,7 +482,44 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     if (label != null) unawaited(_speakForSprout(label));
   }
 
+  Future<void> _loadStoriesCreated() async {
+    try {
+      final progress = await ProgressionService().getUserProgress();
+      if (mounted) _storiesCreated = progress.storiesCreated;
+    } catch (_) {
+      // Unknown count: treat as "not first run" so nothing is skipped.
+    }
+  }
+
+  /// First-story fast path, step 2: the first story uses the default kind
+  /// ("Story Quest": illustrated tale, standard length) and goes straight from
+  /// the scene page to the review step. Mirrors the story-type page's
+  /// `setStoryMode('tales')`.
+  void _applyDefaultStoryType() {
+    final d = widget.wizardData;
+    d.includeIllustrations = true;
+    d.rhymeTimeMode = false;
+    d.learningToReadMode = false;
+    d.limerickMode = false;
+    d.interactiveMode = false;
+    d.storyLength = 'standard';
+  }
+
   void _heroNextPage() {
+    // First-story fast path: scene page -> review, skipping the story-kind page.
+    if (_heroPage == 5 && _isFirstRunFastPath) {
+      _applyDefaultStoryType();
+      FirebaseAnalyticsService.logEvent('first_run_fast_path', {
+        'skipped': 'story_type',
+      });
+      _advanceFromStoryType();
+      return;
+    }
+    // First-story fast path: avatar -> companions, skipping the hero-type page.
+    if (_heroPage == 2 && _isFirstRunFastPath) {
+      _goToPageAfterAvatar();
+      return;
+    }
     // Skip Page 2 when it would only show a single button — open the gallery
     // directly. _maybeAdvanceFromStylePage handles jumping from Page 1 → Page 3
     // once an avatar is chosen.
@@ -924,7 +971,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  void _selectArchetype(ArchetypeData archetype) {
+  /// Stores [archetype] in wizardData exactly as a tap on its card would.
+  void _storeArchetype(ArchetypeData archetype) {
     setState(() {
       _selectedArchetypeId = archetype.name;
       widget.wizardData.selectedArchetypeId = archetype.name;
@@ -936,6 +984,36 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         widget.wizardData.characterAge = 5;
       }
     });
+  }
+
+  /// First-story fast path, step 1: after the avatar is chosen, store the
+  /// band's first archetype card and land on the companions page (4), skipping
+  /// the hero-type page (3). The page stays reachable via Back.
+  void _goToPageAfterAvatar() {
+    final band = ageBandFromAge(widget.wizardData.characterAge);
+    final cards = CharacterArchetypes.forBand(band);
+    if (_selectedArchetypeId == null && cards.isNotEmpty) {
+      _storeArchetype(cards.first);
+    }
+    FirebaseAnalyticsService.logEvent('first_run_fast_path', {
+      'skipped': 'archetype',
+    });
+    _triggerPageCelebration();
+    _heroPageController.animateToPage(
+      4,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+    setState(() => _heroPage = 4);
+    _logPageView(_heroPage);
+    _notifySubStep();
+    Future.delayed(const Duration(milliseconds: 850), () {
+      if (mounted) unawaited(_speakPagePrompt(_heroPage));
+    });
+  }
+
+  void _selectArchetype(ArchetypeData archetype) {
+    _storeArchetype(archetype);
     // Read the archetype name aloud for young children. Sprout (≤5) hears the
     // name only at slow rate; Explorer (6-8) hears name + special-ability so
     // a non-reading 7yo learns what their hero can do.
@@ -1006,6 +1084,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     //      the !_shouldShowBuildHeroPage guard, the avatar lands but no
     //      advance fires — the user is stranded on the name/gender page.
     if (_heroPage == 1) {
+      if (_isFirstRunFastPath) {
+        _goToPageAfterAvatar();
+        return;
+      }
       _triggerPageCelebration();
       _heroPageController.animateToPage(
         3,
