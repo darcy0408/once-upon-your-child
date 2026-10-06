@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/screens/wizard_steps/hero_creator_step.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
@@ -251,20 +254,34 @@ void main() {
   });
 
   group('companions page declutter', () {
-    Future<void> pumpCompanionPage(WidgetTester tester, int age) async {
+    late WizardData lastWizardData;
+    var advanced = 0;
+
+    /// Pumps the companions page. [storiesCreated] seeds the `user_progress`
+    /// blob ProgressionService reads (0 = the very first story).
+    Future<void> pumpCompanionPage(
+      WidgetTester tester,
+      int age, {
+      int storiesCreated = 1,
+    }) async {
       setLargeScreen(tester);
       addTearDown(tester.view.resetPhysicalSize);
       silenceAssetErrors();
+      SharedPreferences.setMockInitialValues({
+        'user_progress': jsonEncode({'storiesCreated': storiesCreated}),
+      });
+      advanced = 0;
       final wizardData = WizardData()
         ..characterName = 'Luna'
         ..characterAge = age;
+      lastWizardData = wizardData;
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData(extensions: [themeForAge(age)]),
           home: Scaffold(
             body: HeroCreatorStep(
               wizardData: wizardData,
-              onNext: () {},
+              onNext: () => advanced++,
               availableCharacters: const [],
             ),
           ),
@@ -275,6 +292,109 @@ void main() {
       pv.controller!.jumpToPage(4);
       await pumpFor(tester, const Duration(milliseconds: 600));
     }
+
+    Finder lockedTiles() => find.byWidgetPredicate((w) =>
+        w.key is ValueKey<String> &&
+        (w.key! as ValueKey<String>).value.startsWith('locked_companion_'));
+
+    testWidgets('first story at 4, 7, 10: one buddy card, no extras',
+        (tester) async {
+      const expected = {
+        4: 'Pebble',
+        7: 'Ember',
+        10: 'Atlas',
+      };
+      for (final age in [4, 7, 10]) {
+        await pumpCompanionPage(tester, age, storiesCreated: 0);
+        final name = expected[age]!;
+        expect(find.textContaining(name), findsWidgets, reason: 'age $age');
+        expect(find.text('Yes!'), findsOneWidget, reason: 'age $age');
+        expect(
+          find.text(age <= 8 ? 'Just me — no buddies' : 'Go solo'),
+          findsOneWidget,
+          reason: 'age $age',
+        );
+        expect(lockedTiles(), findsNothing, reason: 'age $age');
+        expect(find.text('Add a Person'), findsNothing);
+        expect(find.text('Add a Pet'), findsNothing);
+        expect(find.text('Add your real pet to the adventure!'), findsNothing);
+        expect(find.text('Ask a grown-up to add your real pet!'), findsNothing);
+        expect(find.textContaining('adventure team'), findsNothing);
+        expect(find.textContaining('Premium'), findsNothing);
+      }
+    });
+
+    testWidgets('first story: Yes! selects the buddy and advances',
+        (tester) async {
+      await pumpCompanionPage(tester, 7, storiesCreated: 0);
+      expect(find.text('Ember wants to come along!'), findsOneWidget);
+      await tester.tap(find.text('Yes!'));
+      await pumpFor(tester, const Duration(milliseconds: 1000));
+      expect(lastWizardData.selectedCompanions, ['ember']);
+      expect(lastWizardData.companionNames, ['Ember']);
+    });
+
+    testWidgets('first story: Just me clears and advances', (tester) async {
+      await pumpCompanionPage(tester, 7, storiesCreated: 0);
+      await tester.tap(find.text('Just me — no buddies'));
+      await pumpFor(tester, const Duration(milliseconds: 1000));
+      expect(lastWizardData.selectedCompanions, isEmpty);
+      expect(lastWizardData.companionNames, isEmpty);
+    });
+
+    testWidgets('adventurer first story uses the calmer headline',
+        (tester) async {
+      await pumpCompanionPage(tester, 10, storiesCreated: 0);
+      expect(find.text('Atlas is ready to join you.'), findsOneWidget);
+    });
+
+    testWidgets('after one story at age 7: 2 arrived, 2 silhouettes',
+        (tester) async {
+      await pumpCompanionPage(tester, 7, storiesCreated: 1);
+      expect(find.text('Yes!'), findsNothing);
+      expect(find.text('Ember'), findsOneWidget);
+      expect(find.text('Robin'), findsOneWidget);
+      expect(find.text('Clover'), findsNothing);
+      expect(find.text('Biscuit'), findsNothing);
+      expect(lockedTiles(), findsNWidgets(2));
+      expect(find.text('arrives after your next story'), findsOneWidget);
+      expect(find.text('arrives later'), findsOneWidget);
+      // Bring-your-own is back from the second story on.
+      expect(find.text('Add a Person'), findsOneWidget);
+    });
+
+    testWidgets('after one story at age 4: 2 arrived, locked ones hidden',
+        (tester) async {
+      await pumpCompanionPage(tester, 4, storiesCreated: 1);
+      expect(find.text('Pebble'), findsOneWidget);
+      expect(find.text('Robin'), findsOneWidget);
+      expect(lockedTiles(), findsNothing);
+      expect(find.textContaining('arrives'), findsNothing);
+    });
+
+    testWidgets('after three stories: all four, no silhouettes',
+        (tester) async {
+      await pumpCompanionPage(tester, 7, storiesCreated: 3);
+      for (final n in ['Ember', 'Robin', 'Clover', 'Biscuit']) {
+        expect(find.text(n), findsOneWidget, reason: n);
+      }
+      expect(lockedTiles(), findsNothing);
+    });
+
+    testWidgets('tapping a silhouette does nothing', (tester) async {
+      await pumpCompanionPage(tester, 7, storiesCreated: 1);
+      await tester.tap(lockedTiles().first);
+      await pumpFor(tester, const Duration(milliseconds: 600));
+      expect(lastWizardData.selectedCompanions, isEmpty);
+      expect(advanced, 0);
+    });
+
+    testWidgets('the Explorer express lane is gone', (tester) async {
+      for (final stories in [0, 1]) {
+        await pumpCompanionPage(tester, 7, storiesCreated: stories);
+        expect(find.text('Tell Me a Story!'), findsNothing);
+      }
+    });
 
     testWidgets('age 4 and 7: one solo button, kid-friendly label',
         (tester) async {
