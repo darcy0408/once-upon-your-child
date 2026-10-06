@@ -4,7 +4,7 @@
 
 **AI-powered social-emotional storytelling for kids and families.** Once Upon YOUR Child (technical platform name: Story Weaver) is a Flutter-based mobile and web application that generates personalized, age-appropriate stories. The app focuses on emotional awareness and feelings vocabulary to help children recognize and talk about their emotions, build confidence, and practice social-emotional skills through engaging narratives.
 
-> An independent project making social-emotional learning tools accessible to every family. See [`BUSINESS_PLAN.md`](./BUSINESS_PLAN.md) for the full monetization strategy.
+> An independent project making social-emotional learning tools accessible to every family.
 
 > **Note:** This app supports social-emotional learning. It is not therapy, counseling, or medical treatment, and makes no clinical claims.
 
@@ -40,7 +40,7 @@ Users land on the **Wizard Story Screen** with a moon phase progress indicator. 
 - **Avatar**: Age-band-specific character carousel with diverse representation across 6 ethnicities; ✨ "Create a custom avatar that looks like me!" upsell leads to BYOK wizard for AI-generated custom portraits
 - **World Bible**: Optional setting description that locks the story world for consistent world-building
 
-### 4. Step 2: Feeling Selection (`lib/screens/wizard_steps/feeling_selection_step.dart`)
+### 4. Step 2: Feeling Selection (`lib/widgets/feelings_cloud_picker.dart`)
 Two modes:
 
 **Mood Magic Picker** (default, lightweight):
@@ -117,10 +117,9 @@ Scene extraction → bold line-art → printable PDF → saved to Coloring Book 
 
 | Tier | Price | Stories | Key Features |
 |------|-------|---------|-------------|
-| **Free** (Starter) | $0 | 10/month | Pre-made avatars, basic themes, no illustrations |
-| **Adventurer** *(recommended)* | $4.99/mo · $39.99/yr | 10/day | All themes, illustrations, interactive stories |
-| **Family** | $9.99/mo · $79.99/yr | Unlimited | Custom AI avatars, 4 child profiles, PDF export, priority queue |
-| **BYOK** | Free | Unlimited | All Family features; user pays their own Gemini API costs (~$0.10–0.50/month) |
+| **Free** | $0 | 5/month (2/day) | 1 hero, voice narration, basic themes and companions |
+| **Premium** *(Best Value)* | $9.99/mo · $59.99/yr | 10/day (150/month) | 6 heroes, illustrations on every page, custom AI avatars, interactive stories, export |
+| **Family** | $19.99/mo · $159.99/yr | Unlimited | 20 heroes, multi-character stories, export |
 
 **BYOK flow:**
 1. User taps any unlock prompt (upgrade dialog, avatar gallery footer, illustration teaser, Settings)
@@ -140,8 +139,6 @@ lib/
 │   ├── wizard_story_screen.dart             # 4-step wizard (primary entry)
 │   ├── wizard_steps/
 │   │   ├── hero_creator_step.dart           # Character + companions + avatar carousel
-│   │   ├── feeling_selection_step.dart      # Mood Magic + Feelings Wheel + Big Feelings
-│   │   ├── companion_selector_step.dart
 │   │   └── magic_review_step.dart           # Review + generate
 │   ├── parental_consent_screen.dart         # COPPA Notice to Parents + consent
 │   ├── parent_controls_screen.dart          # Screen time, Big Feelings guidance, data deletion
@@ -161,11 +158,11 @@ lib/
 │   ├── magical_typewriter_text.dart         # Story reveal animation
 │   └── magic_orb.dart                       # Breathing/loading animation
 ├── data/
-│   ├── scenario_data.dart                   # 12 story scenarios with conflict hooks
-│   └── feelings_wheel_data.dart             # Age-band feeling vocabulary
+│   └── scenario_data.dart                   # 15 story scenarios with conflict hooks
 ├── models/
-│   ├── wizard_data.dart                     # Full wizard state model
-│   └── subscription_models.dart             # Tier definitions + TierPricing
+│   └── wizard_data.dart                     # Full wizard state model
+├── feelings_wheel_data.dart                 # Age-band feeling vocabulary
+├── subscription_models.dart                 # Tier definitions + TierPricing
 └── config/
     └── environment.dart                     # dev/staging/production URL switching
 ```
@@ -185,11 +182,8 @@ backend/
 ├── routes/
 │   ├── story_routes.py                      # /generate-story, /generate-interactive, /task-status
 │   ├── character_routes.py                  # Character CRUD + parent hidden context
-│   ├── illustration_routes.py
-│   ├── coloring_routes.py
 │   ├── tts_routes.py                        # ElevenLabs TTS proxy
 │   ├── avatar_routes.py                     # Custom + pet avatar generation
-│   ├── api_key_routes.py                    # BYOK key validation + tier detection
 │   ├── stripe_routes.py                     # Payment webhooks
 │   └── utility_routes.py                    # Auth (anonymous + JWT), health checks
 ├── services/
@@ -282,27 +276,27 @@ XP, levels, story streaks, coping-skills milestones tracked via `ProgressionServ
 | Staging | `flutter run --dart-define=FLAVOR=staging` | `https://story-weaver-staging.up.railway.app` |
 | Production | `flutter build web --release --dart-define=FLAVOR=production` | `https://story-weaver-app-production.up.railway.app` |
 
-Required backend env vars (in `backend/.env`):
+Required backend env vars (in `backend/.env`; `backend/.env.example` lists everything):
 ```
-GEMINI_API_KEY=...
+OPENAI_API_KEY=...        # story text; STORY_GEN_PROVIDER defaults to openai
 SECRET_KEY=...
 JWT_SECRET_KEY=...
 ```
-Optional: `STRIPE_API_KEY`, `SENTRY_DSN`, `REDIS_URL`, `ELEVENLABS_API_KEY`
+Optional: `GEMINI_API_KEY` (illustration fallback, Gemini Flash TTS), `STRIPE_API_KEY`, `SENTRY_DSN`, `REDIS_URL`, `ELEVENLABS_API_KEY`
 
 ## Quick Start
 
 ### Prerequisites
 - Flutter SDK 3.24+
 - Python 3.11+
-- Google Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+- OpenAI API key (story text); optionally a Google Gemini key from [Google AI Studio](https://aistudio.google.com/app/apikey)
 
 ### Installation
 
 ```bash
 # 1. Clone
-git clone https://github.com/darcy0408/story-weaver-app.git
-cd story-weaver-app
+git clone https://github.com/darcy0408/once-upon-your-child.git
+cd once-upon-your-child
 
 # 2. Flutter deps
 flutter pub get
@@ -314,7 +308,7 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 # 4. Configure
-echo "GEMINI_API_KEY=your_key_here" > .env
+echo "OPENAI_API_KEY=your_key_here" > .env
 echo "SECRET_KEY=dev-secret" >> .env
 echo "JWT_SECRET_KEY=dev-jwt-secret" >> .env
 
@@ -374,16 +368,15 @@ flutter build web --release --dart-define=FLAVOR=production
 ```
 Merging to `main` *is* the deploy — no manual step. (Railway `grand-light` and Netlify are retired for the frontend.)
 
-CI/CD: `.github/workflows/cicd.yml` (main pipeline — frontend tests/build + Cloudflare Pages deploy), `backend-tests.yml`, `backend-lint.yml`. Backend redeploys natively on Railway on push to `main`.
+CI/CD (`.github/workflows/`): `cicd.yml` (main pipeline — frontend tests/build + Cloudflare Pages deploy), `main_tests.yml`, `backend-tests.yml`, `backend-lint.yml`, `canary-deployment.yml`, `rollback.yml`, `prod-smoke.yml`, `postgres-backup.yml` (scheduled), `restore-drill.yml` (verifies a backup actually restores), `story-load-audit.yml`, `ios-build.yml`, `ios-testflight.yml`. Backend redeploys natively on Railway on push to `main`.
 
 ## Usage Limits & Costs
 
 | Tier | Stories | Characters | Illustrations | Custom Avatars |
 |------|---------|------------|---------------|----------------|
-| Free | 10/month | 1 | ❌ | ❌ |
-| Adventurer ($4.99/mo) | 10/day | 3 | ✅ (1/story) | ❌ |
-| Family ($9.99/mo) | Unlimited | Unlimited | ✅ (3/story) | ✅ |
-| BYOK (free) | Unlimited | Unlimited | ✅ | ✅ |
+| Free | 5/month (2/day) | 1 | 1 illustrated story | ❌ |
+| Premium ($9.99/mo) | 10/day (150/month) | 6 | ✅ | ✅ |
+| Family ($19.99/mo) | Unlimited | 20 | ✅ | ✅ |
 
 **Per-request API costs (server-side):**
 - Story generation: ~$0.002
@@ -406,7 +399,7 @@ CI/CD: `.github/workflows/cicd.yml` (main pipeline — frontend tests/build + Cl
 - Avatar gallery with custom AI portrait generation (reference photo support)
 - World Bible setting field
 - Storybook reader with page-flip, typewriter, ambient audio
-- ElevenLabs TTS narration + voice picker
+- ElevenLabs TTS narration + voice picker, with Azure AI Speech, Gemini Flash TTS and Edge as the overflow tiers
 - Illustration generation + coloring pages
 - Interactive Pick-a-Path (per-segment word sizing)
 - Life Quests coping-skills theme (formerly Big Feelings; per-band variants across Sprout / Explorer / Adventurer / Creator / Adolescent)
@@ -427,7 +420,6 @@ CI/CD: `.github/workflows/cicd.yml` (main pipeline — frontend tests/build + Cl
 
 **In Progress 🔄:**
 - Mobile app (iOS/Android) store deployment — IAP migration in progress (web Stripe live)
-- TTS overflow tier (Gemini Flash TTS between ElevenLabs and Edge, shipped 2026-05-21)
 
 **Planned 📋:**
 1. **v1.1 — Verifiable parental consent**: SMS OTP (Twilio) or $0.50 Stripe micro-charge — parent picks one at setup, never asked again
@@ -449,13 +441,12 @@ CI/CD: `.github/workflows/cicd.yml` (main pipeline — frontend tests/build + Cl
 | [`PRIVACY_POLICY.md`](./PRIVACY_POLICY.md) | Privacy policy with third-party disclosures |
 | [`docs/COPPA_AUDIT.md`](./docs/COPPA_AUDIT.md) | COPPA compliance audit and v1.1 verification plan |
 | [`docs/GUIDED_MEDITATION_V2_SPEC.md`](./docs/GUIDED_MEDITATION_V2_SPEC.md) | Full spec for v2 meditation feature |
-| [`DEPLOYMENT_INSTRUCTIONS.md`](./DEPLOYMENT_INSTRUCTIONS.md) | Netlify deployment guide |
-| [`DEPLOYMENT_CHECKLIST.md`](./DEPLOYMENT_CHECKLIST.md) | Pre-launch checklist |
-| [`TESTING_AND_DEPLOYMENT.md`](./TESTING_AND_DEPLOYMENT.md) | QA procedures |
+| [`docs/DEPLOYMENT_INSTRUCTIONS.md`](./docs/DEPLOYMENT_INSTRUCTIONS.md) | Netlify deployment guide (historical; the frontend now deploys to Cloudflare Pages) |
+| [`docs/DEPLOYMENT_CHECKLIST.md`](./docs/DEPLOYMENT_CHECKLIST.md) | Pre-launch checklist |
 
 ## License
 
-MIT License — see LICENSE file for details.
+MIT License.
 
 ## Acknowledgments
 
