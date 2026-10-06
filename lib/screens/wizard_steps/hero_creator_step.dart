@@ -2054,10 +2054,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             : band.band == AgeBand.adventurer
                 ? 'Choose your companions'
                 : 'Choose Your Companions';
-    final isYoung =
-        band.band == AgeBand.sprout || band.band == AgeBand.explorer;
-    final hasNoCompanion = widget.wizardData.companionNames.isEmpty &&
-        widget.wizardData.selectedCompanions.isEmpty;
     // Page is restructured Column(Expanded(Scroll), Next) so the Next CTA
     // stays in viewport when the companion grid + custom-friend buttons
     // push past the fold — Adventurer band Choose Your Companions audit
@@ -2087,28 +2083,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 const SizedBox(height: 20),
                 _buildCompanionGrid(),
                 const SizedBox(height: 24),
-                // "Adventure alone!" exit — only surfaced for young bands and
-                // only when no companion is selected. Without it, an empty
-                // showcase reads as "you have to fill these orbs" to a 7yo.
-                // Tapping advances the wizard the same way Next does, but the
-                // labelling makes the optional nature explicit.
-                if (isYoung && hasNoCompanion) ...[
-                  TextButton.icon(
-                    icon: const Icon(Icons.directions_walk_rounded,
-                        color: Colors.white70, size: 18),
-                    label: Text(
-                      'Adventure alone!',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: band.uiFontFamily,
-                      ),
-                    ),
-                    onPressed: _heroNextPage,
-                  ),
-                  const SizedBox(height: 8),
-                ],
                 const SizedBox(height: 8),
               ],
             ),
@@ -2234,6 +2208,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   ),
                 ),
               ),
+              // Explorer (6-8) already has the "Add your real pet" card below
+              // while it is collapsed; one pet entry is enough.
+              if (!(band.band == AgeBand.explorer &&
+                  !_showPetCardForExplorer)) ...[
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
@@ -2253,6 +2231,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   ),
                 ),
               ),
+              ],
             ],
           ),
           const SizedBox(height: 10),
@@ -2470,14 +2449,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         const SizedBox(height: 12),
         // Go Solo option
         TextButton.icon(
-          onPressed: () => setState(() {
-            widget.wizardData.companionNames.clear();
-            widget.wizardData.selectedCompanions.clear();
-          }),
+          onPressed: () {
+            setState(() {
+              widget.wizardData.companionNames.clear();
+              widget.wizardData.selectedCompanions.clear();
+            });
+            _heroNextPage();
+          },
           icon: const Icon(Icons.person, color: Colors.white54, size: 18),
-          label: const Text(
-            'Go Solo — no companions',
-            style: TextStyle(color: Colors.white54, fontSize: 13),
+          label: Text(
+            widget.wizardData.characterAge <= 8
+                ? 'Just me — no buddies'
+                : 'Go solo',
+            style: const TextStyle(color: Colors.white54, fontSize: 13),
           ),
         ),
       ],

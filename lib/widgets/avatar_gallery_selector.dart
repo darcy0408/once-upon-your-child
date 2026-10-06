@@ -111,6 +111,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
     });
     // Precache all images in the new batch so they appear simultaneously
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       for (final path in newBatch) {
         precacheImage(AssetImage(path), context);
       }
@@ -118,7 +119,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   }
 
   void _selectAvatar(String assetPath) {
-    // Show the AvatarTweakPanel; don't fire onAvatarSelected yet.
+    // Long-press path: show the AvatarTweakPanel; don't fire onAvatarSelected.
     setState(() => _selectedAvatarPath = assetPath);
   }
 
@@ -305,7 +306,10 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                   selected: isSelected,
                   label: 'Avatar option ${index + 1}',
                   child: GestureDetector(
-                    onTap: () => _selectAvatar(assetPath),
+                    // A tap picks the face. Long-press opens the tweak panel
+                    // (Use this look / Premium customise).
+                    onTap: () => _confirmAvatar(assetPath),
+                    onLongPress: () => _selectAvatar(assetPath),
                     child: child,
                   ),
                 );

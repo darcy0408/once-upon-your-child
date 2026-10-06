@@ -36,6 +36,8 @@ import 'coloring_book_library_screen.dart';
 import 'models.dart';
 import 'therapeutic_focus_options.dart';
 import 'services/progression_service.dart';
+import 'services/companion_unlock_service.dart';
+import 'widgets/companion_arrival_card.dart';
 import 'services/achievement_service.dart';
 import 'config/environment.dart';
 import 'services/story_feedback_service.dart';
@@ -206,6 +208,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   final _feedbackService = StoryFeedbackService();
   final TextEditingController _feedbackController = TextEditingController();
   bool _isFavorite = false;
+  // Id of a magic companion that just arrived (set by _trackStoryCreation);
+  // shown as a dismissible card on the end-of-story page.
+  String? _arrivedCompanionId;
   bool _isLoading = true;
   bool _isSaved = false; // tracks whether story has been saved to library
   // Local storyId assigned by OfflineStoryService.saveStory when the wizard
@@ -1176,6 +1181,23 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       // Disabled per user feedback
       // await UnlockCelebrationDialog.show(context, newFeatureUnlocks);
       debugPrint('Feature unlocked (dialog suppressed): $newFeatureUnlocks');
+    }
+
+    // Companions arrive one per story created. The count is the same
+    // ProgressionService counter incremented just above.
+    try {
+      final newCount = (await _progressionService.getUserProgress())
+          .storiesCreated;
+      final arrivedId = CompanionUnlockService.newlyUnlockedCompanionId(
+        ageBandFromAge(_effectiveAge),
+        newCount - 1,
+        newCount,
+      );
+      if (mounted && arrivedId != null) {
+        setState(() => _arrivedCompanionId = arrivedId);
+      }
+    } catch (e) {
+      debugPrint('Companion arrival check failed: $e');
     }
 
     await FeatureTourService.incrementStoryCount();
@@ -3431,6 +3453,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                   color: _highContrastMode ? Colors.white : band.primary,
                 ),
               ),
+              ..._buildCompanionArrival(band),
               // MT-235 Phase 2 (the returnable saga): the Creator superhero
               // cliffhanger. Surfaces this Issue's dangling thread as a
               // "Next time…" teaser + a light one-tap reflection, per the
@@ -4033,6 +4056,25 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         ),
       ),
     );
+  }
+
+  /// "Name has arrived!" card when this story unlocked a new companion.
+  List<Widget> _buildCompanionArrival(AgeBandThemeData band) {
+    final id = _arrivedCompanionId;
+    if (id == null || _highContrastMode) return const [];
+    final companion = companionForId(band.band, id);
+    if (companion == null) return const [];
+    return [
+      const SizedBox(height: 16),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: CompanionArrivalCard(
+          companion: companion,
+          band: band,
+          onDismiss: () => setState(() => _arrivedCompanionId = null),
+        ),
+      ),
+    ];
   }
 
   /// Hero celebration banner for Sprout's "The End" page. Uses the cover

@@ -27,6 +27,7 @@ import 'package:story_weaver_app/services/illustration_preference_service.dart';
 import 'package:story_weaver_app/data/band_story_defaults.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
+import 'package:story_weaver_app/widgets/archetype_card.dart' show ArchetypeData;
 import 'package:story_weaver_app/widgets/breathing_avatar.dart';
 import 'package:story_weaver_app/widgets/magic_orb.dart';
 import 'package:story_weaver_app/widgets/magical_float.dart';
@@ -1922,7 +1923,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 if (data.selectedArchetypeId != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    data.selectedArchetypeId!,
+                    ArchetypeData.displayNameForStored(
+                        data.selectedArchetypeId!, data.characterAge),
                     style: GoogleFonts.sourceSans3(
                       color: band.accent.withValues(alpha: 0.6),
                       fontSize: 13,
@@ -2153,7 +2155,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                               ),
                               if (data.selectedArchetypeId != null)
                                 Text(
-                                  data.selectedArchetypeId!,
+                                  ArchetypeData.displayNameForStored(
+                                      data.selectedArchetypeId!,
+                                      data.characterAge),
                                   style: GoogleFonts.sourceSans3(
                                       color: creatorAccent, fontSize: 12),
                                 ),
