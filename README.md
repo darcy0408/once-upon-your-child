@@ -411,7 +411,7 @@ CI/CD (`.github/workflows/`): `cicd.yml` (main pipeline — frontend tests/build
 - Achievement + progression system
 - BYOK wizard with benefits copy
 - Illustration teaser for free users (locked shimmer + upgrade sheet)
-- Grace period system (3 days unlimited → 10/month free)
+- Grace period system (3 days unlimited → 5/month free)
 - Rate limiting (Flask-Limiter + Redis, per-route limits)
 - Authorization ownership checks (IDOR prevention)
 - Sentry crash reporting with PII scrubbing
@@ -446,7 +446,7 @@ CI/CD (`.github/workflows/`): `cicd.yml` (main pipeline — frontend tests/build
 
 ## License
 
-MIT License.
+Source-visible, not open source. © Darcy Van Pelt, all rights reserved. The code is published so it can be read and audited; it is not licensed for reuse or redistribution.
 
 ## Acknowledgments
 
