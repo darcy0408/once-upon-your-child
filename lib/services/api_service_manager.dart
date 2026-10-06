@@ -767,6 +767,10 @@ class ApiServiceManager {
     String? conflictHook,
     String? sensoryPalette,
     String? worldBible,
+    // Chunk 4: the picked scene's id and who lives there ({name, what,
+    // personality}). Sent as `scenario_id` / `scene_residents`.
+    String? scenarioId,
+    List<Map<String, String>>? sceneResidents,
     Map<String, dynamic>? moodPhysics,
     String? lifeChallenge,
     // Superhero Mode (ages 3-5). All four costume/power fields are required
@@ -872,6 +876,8 @@ class ApiServiceManager {
         conflictHook: conflictHook,
         sensoryPalette: sensoryPalette,
         worldBible: worldBible,
+        scenarioId: scenarioId,
+        sceneResidents: sceneResidents,
         moodPhysics: moodPhysics,
         lifeChallenge: lifeChallenge,
         heroCostumeColor: heroCostumeColor,
@@ -1155,6 +1161,8 @@ class ApiServiceManager {
     String? conflictHook,
     String? sensoryPalette,
     String? worldBible,
+    String? scenarioId,
+    List<Map<String, String>>? sceneResidents,
     Map<String, dynamic>? moodPhysics,
     String? lifeChallenge,
     String? heroCostumeColor,
@@ -1279,6 +1287,8 @@ class ApiServiceManager {
           conflictHook: conflictHook,
           sensoryPalette: sensoryPalette,
           worldBible: worldBible,
+          scenarioId: scenarioId,
+          sceneResidents: sceneResidents,
           moodPhysics: moodPhysics,
           lifeChallenge: lifeChallenge,
           heroCostumeColor: heroCostumeColor,
@@ -1468,6 +1478,8 @@ class ApiServiceManager {
     String? conflictHook,
     String? sensoryPalette,
     String? worldBible,
+    String? scenarioId,
+    List<Map<String, String>>? sceneResidents,
     Map<String, dynamic>? moodPhysics,
     String? lifeChallenge,
     String? heroCostumeColor,
@@ -1537,6 +1549,9 @@ class ApiServiceManager {
       if (sensoryPalette != null && sensoryPalette.isNotEmpty)
         'sensoryPalette': sensoryPalette,
       if (worldBible != null && worldBible.isNotEmpty) 'worldBible': worldBible,
+      if (scenarioId != null && scenarioId.isNotEmpty) 'scenario_id': scenarioId,
+      if (sceneResidents != null && sceneResidents.isNotEmpty)
+        'scene_residents': sceneResidents,
       if (moodPhysics != null) 'moodPhysics': moodPhysics,
       if (lifeChallenge != null && lifeChallenge.isNotEmpty)
         'lifeChallenge': lifeChallenge,

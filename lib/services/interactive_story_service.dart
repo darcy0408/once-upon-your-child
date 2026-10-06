@@ -131,6 +131,10 @@ class InteractiveStoryService {
     Map<String, int>? personalitySliders,
     Map<String, dynamic>? chronicleContext,
     Map<String, dynamic>? bigFeelingsContext,
+    // Chunk 4: the picked scene's id and who lives there. Sent as
+    // `scenario_id` / `scene_residents`; absent for scenes with no residents.
+    String? scenarioId,
+    List<Map<String, String>>? sceneResidents,
     // Audio-only ("no screen") callers never render segment.image_url — set
     // false to skip illustration generation server-side. Not persisted by the
     // backend, so audio callers must also pass it on every continue call.
@@ -164,6 +168,10 @@ class InteractiveStoryService {
             if (chronicleContext != null) 'chronicle_context': chronicleContext,
             if (bigFeelingsContext != null && bigFeelingsContext.isNotEmpty)
               'big_feelings_context': bigFeelingsContext,
+            if (scenarioId != null && scenarioId.isNotEmpty)
+              'scenario_id': scenarioId,
+            if (sceneResidents != null && sceneResidents.isNotEmpty)
+              'scene_residents': sceneResidents,
           }),
         )
         .timeout(const Duration(seconds: 30));

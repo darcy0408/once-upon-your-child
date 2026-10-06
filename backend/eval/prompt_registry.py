@@ -67,7 +67,7 @@ class PromptTemplate:
 TEMPLATES: tuple[PromptTemplate, ...] = (
     PromptTemplate(
         template_id="T1_STANDARD",
-        content_hash="33ef5b2089822340",
+        content_hash="1301812c6c9123ba",
         source_file="backend/services/story_service.py",
         anchors=("AdvancedStoryEngine.generate_enhanced_prompt",),
         mode="standard",
@@ -403,11 +403,28 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         interpolated_vars=("character_id",),
         description="Recall of prior themes/cast; vary or build on rather than repeat.",
     ),
+    PromptTemplate(
+        template_id="T14_SCENE_RESIDENTS",
+        content_hash="6709d3ffd427b786",
+        source_file="backend/services/scene_residents.py",
+        anchors=("build_scene_residents_line",),
+        mode="standard",
+        age_bands=AGE_BANDS,
+        builder_function="build_scene_residents_line",
+        output_format="(conditional injection beside WORLD BIBLE in T1)",
+        interpolated_vars=("scene_residents", "character", "visited_before"),
+        description=(
+            "Who lives in the picked scene (never mandatory, never travels) and, "
+            "on a return visit, that the hero already knows them. Also spliced "
+            "into the Pick-a-Path opening/continuation prompts (not registered "
+            "here, see F-05)."
+        ),
+    ),
 )
 
 
 # Templates that are directly sent to the LLM as a complete prompt.
-# T8_SAFETY_GUARDRAILS/T9_STRICT_OUTPUT (static injections) and T11/T12/T13
+# T8_SAFETY_GUARDRAILS/T9_STRICT_OUTPUT (static injections) and T11/T12/T13/T14
 # (conditional injections) are fragments composed into T1 — they don't define
 # independent cells.
 SENDABLE_TEMPLATE_IDS = frozenset(

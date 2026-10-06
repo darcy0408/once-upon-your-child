@@ -24,6 +24,12 @@ from backend.models import (
 from backend.services.interactive_adventure_prompt_builder import (
     InteractiveAdventurePromptBuilder,
 )
+from backend.services.scene_residents import (
+    find_prior_scene_visit,
+    known_resident_names,
+    normalize_scenario_id,
+    normalize_scene_residents,
+)
 from backend.services.story_service import (
     _strip_companion_beat_labels,
     _strip_lesson_endings,
@@ -112,6 +118,8 @@ class InteractiveAdventureService:
         companions_payload: Optional[List[Dict]] = None,
         character_name: Optional[str] = None,
         include_images: bool = True,
+        scenario_id: Optional[str] = None,
+        scene_residents: Optional[List[Dict]] = None,
     ) -> Dict[str, Any]:
         """
         Create a new interactive adventure story with opening segment.
@@ -201,6 +209,21 @@ class InteractiveAdventureService:
             character_dict, child_name, hero_token
         )
 
+        # Chunk 4: who lives in the picked scene, and whether this hero has
+        # been here before (standard or Pick-a-Path). Persisted on the story
+        # state so continuation segments keep the same people.
+        clean_scenario_id = normalize_scenario_id(scenario_id)
+        clean_residents = normalize_scene_residents(scene_residents, character_age)
+        scene_visited_before = False
+        scene_known_names: List[str] = []
+        if clean_residents:
+            # A character id that didn't resolve to a row (temp-/anon ids)
+            # has no history to recall.
+            scene_visited_before, met_lower = find_prior_scene_visit(
+                character_id if character else None, clean_scenario_id
+            )
+            scene_known_names = known_resident_names(clean_residents, met_lower)
+
         # Build opening prompt
         prompt = InteractiveAdventurePromptBuilder.build_opening_prompt(
             child_name=hero_token,
@@ -221,6 +244,9 @@ class InteractiveAdventureService:
             sensory_palette=sensory_palette,
             chronicle_context=chronicle_context,
             big_feelings_context=big_feelings_context,
+            scene_residents=clean_residents,
+            scene_visited_before=scene_visited_before,
+            scene_known_names=scene_known_names,
         )
 
         # Generate first segment
@@ -288,6 +314,16 @@ class InteractiveAdventureService:
             time_pressure=state_data.get("time_pressure"),
             additional_state={
                 "big_feelings_context": big_feelings_context or {},
+                **(
+                    {
+                        "scenario_id": clean_scenario_id,
+                        "scene_residents": clean_residents,
+                        "scene_visited_before": scene_visited_before,
+                        "scene_known_names": scene_known_names,
+                    }
+                    if clean_scenario_id and clean_residents
+                    else {}
+                ),
             },
         )
         db.session.add(state)
@@ -1005,6 +1041,11 @@ class InteractiveAdventureService:
     def _build_story_context(self, story: InteractiveStory) -> Dict[str, Any]:
         """Build story context for continuation"""
         character_dict = self._get_character_dict(story)
+        extra = (
+            story.state.additional_state
+            if story.state and isinstance(story.state.additional_state, dict)
+            else {}
+        )
 
         return {
             "title": story.title,
@@ -1020,6 +1061,11 @@ class InteractiveAdventureService:
                 if story.state and story.state.additional_state
                 else {}
             ),
+            # Chunk 4: same scene residents (and return-visit status) as the
+            # opening, so later segments don't forget who lives here.
+            "scene_residents": extra.get("scene_residents") or [],
+            "scene_visited_before": bool(extra.get("scene_visited_before")),
+            "scene_known_names": extra.get("scene_known_names") or [],
         }
 
     def _get_character_dict(self, story: InteractiveStory) -> Optional[Dict]:

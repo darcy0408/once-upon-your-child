@@ -1111,6 +1111,10 @@ def create_story_blueprint(
             "conflict_hook": payload.get("conflictHook"),  # NEW: Plot Driver
             "sensory_palette": payload.get("sensoryPalette"),  # NEW: Atmosphere
             "world_bible": payload.get("worldBible", ""),  # World consistency guide
+            # Chunk 4: the picked scene and who lives there. Normalized (id
+            # shape, count by age, field caps) in the task, not trusted here.
+            "scenario_id": payload.get("scenario_id"),
+            "scene_residents": payload.get("scene_residents"),
             "custom_elements": payload.get(
                 "customElements", ""
             ),  # NEW: Free-form custom story requests
@@ -2064,6 +2068,10 @@ def create_story_blueprint(
         conflict_hook = payload.get("conflictHook", "")
         sensory_palette = payload.get("sensoryPalette", "")
         chronicle_context = payload.get("chronicle_context")
+        # Chunk 4: the picked scene and who lives there (normalized in the
+        # service; never routed through the companion contract).
+        scenario_id = payload.get("scenario_id")
+        scene_residents = payload.get("scene_residents")
         big_feelings_context = payload.get("big_feelings_context")
         companions_payload = payload.get("companions") or []
         character_name = payload.get("character_name")
@@ -2104,6 +2112,8 @@ def create_story_blueprint(
                 chronicle_context=chronicle_context,
                 big_feelings_context=big_feelings_context,
                 companions_payload=companions_payload or None,
+                scenario_id=scenario_id,
+                scene_residents=scene_residents,
                 character_name=character_name,
                 include_images=include_images,
             )

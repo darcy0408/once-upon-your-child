@@ -102,6 +102,11 @@ class WizardDataMapper {
     String conflictHook = ''; // Default to empty string instead of null
     String sensoryPalette = ''; // Default to empty string instead of null
     String worldBible = '';
+    // Chunk 4 (scene residents): which scene this is, and who lives there, so
+    // the backend can introduce them and recognise a return visit. Never sent
+    // for superhero stories — that prompt chain owns its own setting.
+    String? scenarioId;
+    List<Map<String, String>> sceneResidents = const [];
 
     // MT-118: dispatch on the sturdier `heroPower` signal rather than
     // `selectedScenario`. After the superhero flow (costume/cape/emblem/power)
@@ -124,6 +129,14 @@ class WizardDataMapper {
         conflictHook = scenarioCard.conflictHookForAge(age);
         sensoryPalette = scenarioCard.sensoryPalette;
         worldBible = scenarioCard.worldBibleForAge(age);
+        sceneResidents = scenarioCard
+            .residentsForAge(age)
+            .map((r) => r.toRequestJson(age))
+            .toList();
+        // Only scenes with residents are "places" a hero can return to.
+        // "Imagine It" is a different invented place every time, so a repeat
+        // pick must never read as a return visit.
+        if (sceneResidents.isNotEmpty) scenarioId = scenarioCard.id;
       }
     }
 
@@ -309,6 +322,8 @@ class WizardDataMapper {
       'conflictHook': conflictHook,
       'sensoryPalette': sensoryPalette,
       'worldBible': worldBible,
+      if (scenarioId != null) 'scenario_id': scenarioId,
+      if (sceneResidents.isNotEmpty) 'scene_residents': sceneResidents,
       // Send structured companion data
       'companion_pets': companionsPets,
       'companion_characters': companionsOther,
