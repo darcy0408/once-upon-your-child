@@ -212,12 +212,19 @@ void main() {
 
     debugPrint('🚀 [TEST] Companion Selector Step');
     // Go solo — no companion selection needed for this journey test
-    await _waitForText(tester, 'Go Solo');
-    await tester.tap(find.textContaining('Go Solo'));
+    await _waitForText(tester, 'no buddies');
+    await tester.tap(find.textContaining('no buddies'));
     await tester.pump(const Duration(milliseconds: 500));
+    // Go solo now advances the page; the test jumped pages directly so the
+    // inner step's page counter is stale and opens the avatar gallery. Close it.
+    final nav1 = tester.state<NavigatorState>(find.byType(Navigator).first);
+    if (nav1.canPop()) {
+      nav1.pop();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
 
     // Jump outer wizard to MagicReviewStep (page 1)
-    final outerPV = tester.widgetList<PageView>(find.byType(PageView)).first;
+    final outerPV =tester.widgetList<PageView>(find.byType(PageView)).first;
     outerPV.controller!.jumpToPage(1);
     await tester.pump(const Duration(milliseconds: 100));
     await _drainIgnoredAssetExceptions(tester);
@@ -267,12 +274,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     debugPrint('🚀 [TEST] Skipping Companions');
-    await _waitForText(tester, 'Go Solo');
-    await tester.tap(find.textContaining('Go Solo'));
+    await _waitForText(tester, 'no buddies');
+    await tester.tap(find.textContaining('no buddies'));
     await tester.pump(const Duration(milliseconds: 500));
+    final nav2 = tester.state<NavigatorState>(find.byType(Navigator).first);
+    if (nav2.canPop()) {
+      nav2.pop();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
 
     // Jump outer wizard to MagicReviewStep (page 1)
-    final outerPV2 = tester.widgetList<PageView>(find.byType(PageView)).first;
+    final outerPV2 =tester.widgetList<PageView>(find.byType(PageView)).first;
     outerPV2.controller!.jumpToPage(1);
     await tester.pump(const Duration(milliseconds: 100));
     await _drainIgnoredAssetExceptions(tester);
