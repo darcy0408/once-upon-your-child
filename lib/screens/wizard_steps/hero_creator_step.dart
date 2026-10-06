@@ -23,9 +23,10 @@ import '../../widgets/magic_star_cursor.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/user_identity_service.dart';
 import '../../services/isar_service.dart';
-import '../../services/progression_service.dart';
 import '../../models/local/character_local.dart';
 import '../../services/avatar_generation_state.dart';
+import '../../services/companion_unlock_service.dart';
+import '../../widgets/companion_arrival_card.dart';
 import '../../services/caregiver_service.dart';
 import '../../services/child_profile_service.dart';
 import '../../services/firebase_analytics_service.dart';
@@ -112,13 +113,48 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   String? _customAvatarFilePath;
   bool _isPremium = false;
 
-  /// Stories this device has created so far (`ProgressionService`). Null until
-  /// loaded. Drives the first-story fast path: a brand-new hero on a device
-  /// with zero stories skips the hero-type and story-kind pages.
+  /// Stories this device has created so far (`ProgressionService`), loaded
+  /// once in initState. Null until loaded. Drives two things: which magic
+  /// companions have arrived, and the first-story fast path (a brand-new hero
+  /// on a device with zero stories skips the hero-type and story-kind pages).
   int? _storiesCreated;
 
   /// First run = creating a NEW hero and no story has ever been created.
+  /// Deliberately strict (`== 0`, not the effective count below): while the
+  /// count is still loading nothing is skipped.
   bool get _isFirstRunFastPath => _isCreatingNew && _storiesCreated == 0;
+
+  /// Until the count loads, a brand-new device (no saved heroes) is treated as
+  /// a first run, while a returning user (saved heroes exist) is assumed past
+  /// it, so the first-run card never flashes at someone who has played.
+  int get _effectiveStoriesCreated =>
+      _storiesCreated ?? (widget.availableCharacters.isEmpty ? 0 : 1);
+
+  /// Team size cap. Sprout always travels with one buddy. Everyone else may
+  /// bring up to three, but only once a second companion has arrived.
+  int _maxTeamSize(AgeBand band) {
+    if (band == AgeBand.sprout) return 1;
+    final unlocked = CompanionUnlockService.unlockedCompanionIds(
+      band,
+      _effectiveStoriesCreated,
+    );
+    return unlocked.length >= 2 ? 3 : 1;
+  }
+
+  /// The single-buddy page shown on the very first story (under 13 only; the
+  /// 13+ Creative Brief has no first-run card).
+  bool _isFirstRunCompanionPage(AgeBand band) =>
+      !band.isMature && _effectiveStoriesCreated == 0;
+
+  Future<void> _loadStoriesCreated() async {
+    try {
+      final count = await CompanionUnlockService.currentStoriesCreated();
+      if (mounted) setState(() => _storiesCreated = count);
+    } catch (_) {
+      // Unknown count: stays null, so the fast path skips nothing and the
+      // companion page falls back to the saved-heroes heuristic above.
+    }
+  }
 
   /// MT-151: lifetime count of AI photo-avatars this account has generated,
   /// fetched from the backend's `feature-unlocks` endpoint. Every account gets
@@ -482,15 +518,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     if (label != null) unawaited(_speakForSprout(label));
   }
 
-  Future<void> _loadStoriesCreated() async {
-    try {
-      final progress = await ProgressionService().getUserProgress();
-      if (mounted) _storiesCreated = progress.storiesCreated;
-    } catch (_) {
-      // Unknown count: treat as "not first run" so nothing is skipped.
-    }
-  }
-
   /// First-story fast path, step 2: the first story uses the default kind
   /// ("Story Quest": illustrated tale, standard length) and goes straight from
   /// the scene page to the review step. Mirrors the story-type page's
@@ -583,36 +610,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     if (!mounted || result != true) return;
     _wishController.text = widget.wizardData.customElements;
     setState(() {});
-    _advanceFromStoryType();
-  }
-
-  /// MT-279: Express "Tell Me a Story!" lane for the Explorer band (6-8).
-  /// Surfaced on the Adventure Team page, it skips the remaining optional pages
-  /// (scene + story-type) and jumps straight to Magic Review with smart
-  /// defaults — a surprise preset world plus the default illustrated-story mode
-  /// (already the WizardData default). Younger Explorers who just want a story
-  /// *now* reach it in one tap instead of hunting through three more "Next"es.
-  void _expressTellMeAStory() {
-    // Pick a surprise world if the child hasn't already chosen one, so the
-    // generated story has a concrete setting rather than the blank "Magical
-    // Adventure" fallback. These three presets are the always-available scene
-    // tiles (no modal, no premium gate) shared across the young bands.
-    final current = widget.wizardData.selectedScenario;
-    if (current == null || current.isEmpty) {
-      const surprisePresets = <String>[
-        'vanishing_colors',
-        'crystal_cavern',
-        'volcano_dragons',
-      ];
-      widget.wizardData.selectedScenario =
-          surprisePresets[Random().nextInt(surprisePresets.length)];
-    }
-    FirebaseAnalyticsService.logEvent('explorer_express_story', {
-      'scenario': widget.wizardData.selectedScenario,
-    });
-    // Story-type defaults (illustrated 'tales' mode) already live on WizardData,
-    // so no mode mutation is needed here — just advance to Magic Review. Reuses
-    // the story-type latch so a double-tap can't push two steps.
     _advanceFromStoryType();
   }
 
@@ -1977,7 +1974,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     // Sprouts travel with 1 buddy; all other bands get up to 3 companions.
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final maxSlots = band.band == AgeBand.sprout ? 1 : 3;
+    final maxSlots = _maxTeamSize(band.band);
     // One buddy is already a complete team — more is optional, up to maxSlots.
     // Rather than pre-rendering every empty seat (which read as "you must fill
     // all three"), show the child's chosen companions plus a SINGLE trailing
@@ -2058,77 +2055,139 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  /// MT-279: the Explorer-only express-lane CTA. A bright, unmistakable
-  /// shortcut that says "you've got a hero — I'll handle the rest". Styled to
-  /// echo the welcome screen's "Create a new hero" tile so it reads as a
-  /// first-class action, while the subtitle makes the surprise-world behaviour
-  /// explicit so a tap never feels like a mistake.
-  Widget _buildExpressStoryButton() {
-    return GestureDetector(
-      onTap: _expressTellMeAStory,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF7C4DFF), Color(0xFFFF7043)],
+  /// First story, under 13: one buddy, no grid, no bring-your-own entries.
+  Widget _buildFirstBuddyPage(AgeBandThemeData band) {
+    final first = CompanionUnlockService.unlockedCompanionIds(band.band, 0)
+        .map((id) => companionForId(band.band, id))
+        .whereType<CompanionData>()
+        .firstOrNull;
+    if (first == null) return _buildCompanionTeamScroll(band);
+    final isAdventurer = band.band == AgeBand.adventurer;
+    final headline = isAdventurer
+        ? '${first.name} is ready to join you.'
+        : '${first.name} wants to come along!';
+    const double artSize = 170;
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  headline,
+                  textAlign: TextAlign.center,
+                  softWrap: true,
+                  style: _bandTitleStyle(band, baseFontSize: 22),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  width: artSize,
+                  height: artSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: first.backgroundColor ?? const Color(0xFF3A2363),
+                    border: Border.all(
+                      color: const Color(0xFFFFD700),
+                      width: 3,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFFD700).withAlpha(90),
+                        blurRadius: 18,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: SafeAssetImage(
+                      first.imagePath,
+                      width: artSize,
+                      height: artSize,
+                      fit: first.backgroundColor != null
+                          ? BoxFit.contain
+                          : BoxFit.cover,
+                      alignment: first.imageAlignment,
+                      placeholder: const Icon(Icons.pets,
+                          color: Colors.white54, size: 40),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  first.name,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  first.tagline,
+                  textAlign: TextAlign.center,
+                  softWrap: true,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                    fontFamily: band.uiFontFamily,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        widget.wizardData.companionNames
+                          ..clear()
+                          ..add(first.name);
+                        widget.wizardData.selectedCompanions
+                          ..clear()
+                          ..add(first.id);
+                      });
+                      unawaited(_speakForSprout(first.name));
+                      _heroNextPage();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFD700),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Yes!',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildGoSoloButton(),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFFFD700), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFFD700).withAlpha(60),
-              blurRadius: 14,
-              spreadRadius: 1,
-            ),
-          ],
         ),
-        child: Row(
-          children: [
-            const Text('⚡', style: TextStyle(fontSize: 28)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Tell Me a Story!',
-                    style: GoogleFonts.fredoka(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      shadows: const [
-                        Shadow(color: Colors.black54, blurRadius: 4),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    "Skip ahead — we'll pick a world for you!",
-                    style: GoogleFonts.fredoka(
-                      color: Colors.white,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
-                      height: 1.2,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded,
-                color: Color(0xFFFFD700), size: 28),
-          ],
-        ),
-      ),
+      ],
     );
   }
 
   Widget _buildAdventureTeamPage() {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    if (_isFirstRunCompanionPage(band.band)) {
+      return _buildFirstBuddyPage(band);
+    }
+    return _buildCompanionTeamScroll(band);
+  }
+
+  Widget _buildCompanionTeamScroll(AgeBandThemeData band) {
     final companionTitle = band.band == AgeBand.sprout
         ? 'Pick your buddy!'
         : band.band == AgeBand.explorer
@@ -2154,13 +2213,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   style: _bandTitleStyle(band, baseFontSize: 22),
                 ),
                 const SizedBox(height: 16),
-                // MT-279: Explorer-only express lane — once the hero is built,
-                // offer a one-tap shortcut straight to the story so 6-8s aren't
-                // forced through team + scene + story-type to reach a story.
-                if (band.band == AgeBand.explorer) ...[
-                  _buildExpressStoryButton(),
-                  const SizedBox(height: 20),
-                ],
                 _buildCompanionShowcase(),
                 const SizedBox(height: 20),
                 _buildCompanionGrid(),
@@ -2254,7 +2306,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   _scheduleSproutCompanionAdvance();
                 }
               : null,
-          maxCompanions: band.band == AgeBand.sprout ? 1 : 3,
+          maxCompanions: _maxTeamSize(band.band),
+          storiesCreated: _effectiveStoriesCreated,
+          // Sprout never sees what is still to come; everyone else sees a
+          // dimmed silhouette so there is something to look forward to.
+          showLocked: band.band != AgeBand.sprout,
         ),
         const SizedBox(height: 16),
         // ── Add a friend or pet — hidden for Sprout band ────────────────────
@@ -2529,24 +2585,26 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             style: const TextStyle(color: Color(0xFFFFD700), fontSize: 12),
           ),
         const SizedBox(height: 12),
-        // Go Solo option
-        TextButton.icon(
-          onPressed: () {
-            setState(() {
-              widget.wizardData.companionNames.clear();
-              widget.wizardData.selectedCompanions.clear();
-            });
-            _heroNextPage();
-          },
-          icon: const Icon(Icons.person, color: Colors.white54, size: 18),
-          label: Text(
-            widget.wizardData.characterAge <= 8
-                ? 'Just me — no buddies'
-                : 'Go solo',
-            style: const TextStyle(color: Colors.white54, fontSize: 13),
-          ),
-        ),
+        _buildGoSoloButton(),
       ],
+    );
+  }
+
+  /// "Just me — no buddies" / "Go solo": clears the team and moves on.
+  Widget _buildGoSoloButton() {
+    return TextButton.icon(
+      onPressed: () {
+        setState(() {
+          widget.wizardData.companionNames.clear();
+          widget.wizardData.selectedCompanions.clear();
+        });
+        _heroNextPage();
+      },
+      icon: const Icon(Icons.person, color: Colors.white54, size: 18),
+      label: Text(
+        widget.wizardData.characterAge <= 8 ? 'Just me — no buddies' : 'Go solo',
+        style: const TextStyle(color: Colors.white54, fontSize: 13),
+      ),
     );
   }
 
