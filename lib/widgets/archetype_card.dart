@@ -507,6 +507,21 @@ class ArchetypeData {
     return name;
   }
 
+  /// Maps a stored archetype id (which is always the 9-12 [name]) to the
+  /// name shown for [age]. Matches on any of the archetype's names; an
+  /// unknown string is returned unchanged.
+  static String displayNameForStored(String stored, int age) {
+    for (final a in CharacterArchetypes.all) {
+      if (stored == a.name ||
+          stored == a.matureName ||
+          stored == a.explorerName ||
+          stored == a.youngChildName) {
+        return a.nameForAge(age);
+      }
+    }
+    return stored;
+  }
+
   String descriptionForAge(int age) {
     if (age >= 13 && matureDescription != null) return matureDescription!;
     if (age >= 9 && age <= 12 && adventurerDescription != null) return adventurerDescription!;
