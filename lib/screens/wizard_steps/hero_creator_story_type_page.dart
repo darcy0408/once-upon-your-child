@@ -774,6 +774,19 @@ class HeroStoryTypePage extends StatelessWidget {
               ],
             ),
           SizedBox(height: band.space(12)),
+          // Optional extras (Explorer wishes; Adventurer genre / personality /
+          // wish text) are folded under one collapsed "More options" row on
+          // every run. Nothing is removed — it is just tucked away.
+          if (band.band != AgeBand.sprout)
+            _MoreOptions(
+              band: band,
+              titleStyle: _bandBodyStyle(
+                band,
+                color: Colors.white,
+                fontSize: band.body(16),
+                fontWeight: FontWeight.w600,
+              ),
+              children: [
           // Genre tags — Adventurer+ only
           if (band.band == AgeBand.adventurer ||
               band.band == AgeBand.creator) ...[
@@ -924,6 +937,8 @@ class HeroStoryTypePage extends StatelessWidget {
             _buildWishPromptButtons(band)
           else if (band.band != AgeBand.sprout)
             _buildWishTextInput(band),
+              ],
+            ),
           // Sprout cards auto-advance on tap, making the arrow redundant — and
           // a second "go" control is just noise for a 3–5 year-old. Older
           // bands still get the explicit arrow.
@@ -935,6 +950,77 @@ class HeroStoryTypePage extends StatelessWidget {
           SizedBox(height: band.space(20)),
         ],
       ),
+    );
+  }
+}
+
+/// A tappable "More options" row that folds optional story extras. Collapsed by
+/// default; the children stay mounted-on-demand (nothing is removed).
+class _MoreOptions extends StatefulWidget {
+  const _MoreOptions({
+    required this.band,
+    required this.titleStyle,
+    required this.children,
+  });
+
+  final AgeBandThemeData band;
+  final TextStyle titleStyle;
+  final List<Widget> children;
+
+  @override
+  State<_MoreOptions> createState() => _MoreOptionsState();
+}
+
+class _MoreOptionsState extends State<_MoreOptions> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final band = widget.band;
+    return Column(
+      children: [
+        Semantics(
+          button: true,
+          expanded: _expanded,
+          label: 'More options',
+          child: InkWell(
+            borderRadius: BorderRadius.circular(band.radiusMd),
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Container(
+              constraints: BoxConstraints(minHeight: band.touchTarget(48)),
+              padding: EdgeInsets.symmetric(
+                horizontal: band.space(14),
+                vertical: band.space(8),
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white10,
+                borderRadius: BorderRadius.circular(band.radiusMd),
+                border: Border.all(color: Colors.white24, width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ExcludeSemantics(
+                      child: Text('More options', style: widget.titleStyle),
+                    ),
+                  ),
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: Colors.white70,
+                    size: band.body(28),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (_expanded) ...[
+          SizedBox(height: band.space(16)),
+          ...widget.children,
+        ],
+      ],
     );
   }
 }
