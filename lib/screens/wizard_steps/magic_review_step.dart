@@ -523,6 +523,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       length: _mapStoryLength(wd.storyLength),
                       chronicleId: chronicleId,
                       companions: companions.isEmpty ? null : companions,
+                      scenarioId: requestData['scenario_id']?.toString(),
+                      sceneResidents:
+                          (requestData['scene_residents'] as List?)
+                              ?.whereType<Map<String, String>>()
+                              .toList(),
                       interests: wd.selectedEmotionChips.isNotEmpty
                           ? wd.selectedEmotionChips
                           : null,
@@ -648,6 +653,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             conflictHook: requestData['conflictHook']?.toString(),
             sensoryPalette: requestData['sensoryPalette']?.toString(),
             worldBible: requestData['worldBible']?.toString(),
+            scenarioId: requestData['scenario_id']?.toString(),
+            sceneResidents: (requestData['scene_residents'] as List?)
+                ?.whereType<Map<String, String>>()
+                .toList(),
             moodPhysics: requestData['moodPhysics'] is Map<String, dynamic>
                 ? requestData['moodPhysics'] as Map<String, dynamic>
                 : null,
