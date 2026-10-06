@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/screens/wizard_steps/hero_creator_step.dart';
+import 'package:story_weaver_app/theme/age_band_theme.dart';
 
 void main() {
   // Silence asset-not-found FlutterErrors so tests that show character cards
@@ -247,5 +248,60 @@ void main() {
     await tester.tap(girlBtn);
     await pumpFor(tester, const Duration(milliseconds: 1700));
     expect(wizardData.characterGender, 'Girl');
+  });
+
+  group('companions page declutter', () {
+    Future<void> pumpCompanionPage(WidgetTester tester, int age) async {
+      setLargeScreen(tester);
+      addTearDown(tester.view.resetPhysicalSize);
+      silenceAssetErrors();
+      final wizardData = WizardData()
+        ..characterName = 'Luna'
+        ..characterAge = age;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(extensions: [themeForAge(age)]),
+          home: Scaffold(
+            body: HeroCreatorStep(
+              wizardData: wizardData,
+              onNext: () {},
+              availableCharacters: const [],
+            ),
+          ),
+        ),
+      );
+      await pumpFor(tester, const Duration(milliseconds: 500));
+      final pv = tester.widgetList<PageView>(find.byType(PageView)).first;
+      pv.controller!.jumpToPage(4);
+      await pumpFor(tester, const Duration(milliseconds: 600));
+    }
+
+    testWidgets('age 4 and 7: one solo button, kid-friendly label',
+        (tester) async {
+      for (final age in [4, 7]) {
+        await pumpCompanionPage(tester, age);
+        expect(find.text('Just me — no buddies'), findsOneWidget,
+            reason: 'age $age');
+        expect(find.text('Adventure alone!'), findsNothing);
+        expect(find.textContaining('Go Solo'), findsNothing);
+      }
+    });
+
+    testWidgets('age 10: single "Go solo" button', (tester) async {
+      await pumpCompanionPage(tester, 10);
+      expect(find.text('Go solo'), findsOneWidget);
+      expect(find.text('Just me — no buddies'), findsNothing);
+    });
+
+    testWidgets('explorer sees one pet entry; adventurer keeps Add a Pet',
+        (tester) async {
+      await pumpCompanionPage(tester, 7);
+      expect(find.text('Add your real pet to the adventure!'),
+          findsOneWidget);
+      expect(find.text('Add a Pet'), findsNothing);
+
+      await pumpCompanionPage(tester, 10);
+      expect(find.text('Add a Pet'), findsOneWidget);
+    });
   });
 }
