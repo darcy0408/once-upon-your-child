@@ -908,9 +908,9 @@ frozenlist==1.8.0 \
     # via
     #   aiohttp
     #   aiosignal
-google-api-core==2.33.0 \
-    --hash=sha256:3a36bcc3e319783f4c97da41f6f45ea6ffcaa55848e341de16e09cb70243c2bb \
-    --hash=sha256:a2e22a0c1d0f03eafff1858b38cf46f832d5902b0c052235bf0ab8402929fbdc
+google-api-core==2.39.0 \
+    --hash=sha256:40a5d1c892bc1798f3b75ab10c665b85717979088519c714ca5774ee81d1e3c5 \
+    --hash=sha256:824ee414a10adefefae33fc5e2ba28dc6f0f7089d011c9cc98ea9178e61299e9
     # via -r requirements.in
 google-auth==2.57.0 \
     --hash=sha256:180dafe015cfb62193bea26b677500fab5b9fd51a1e825ebf3ad9b182047ae59 \
@@ -1431,6 +1431,12 @@ openai==2.53.0 \
     --hash=sha256:baf5802ad08980e1d9d561e1b996e800c8bcd14af5847c6d0e7a5cc59e4d4116 \
     --hash=sha256:c694ffc747a3c4d1663ef2b07b811315a476164ee5efa3a993967349ebca7618
     # via -r requirements.in
+opentelemetry-api==1.45.0 \
+    --hash=sha256:711ede81773c8025c2c03dac0450bc89f3d30aea6eabcc815c570d4e35a963f7 \
+    --hash=sha256:711ede81773c8025c2c03dac0450bc89f3d30aea6eabcc815c570d4e35a963f7 \
+    --hash=sha256:80e068aba7cd56c8b58512d6a36f8d25cb1dfaa0c0a4cc1c938ccf9f362d9cb3 \
+    --hash=sha256:80e068aba7cd56c8b58512d6a36f8d25cb1dfaa0c0a4cc1c938ccf9f362d9cb3
+    # via google-api-core
 ordered-set==4.1.0 \
     --hash=sha256:046e1132c71fcf3330438a539928932caf51ddbc582496833e23de611de14562 \
     --hash=sha256:694a8e44c87657c59292ede72891eb91d34131f6531463aab3009191c77364a8
@@ -2214,6 +2220,7 @@ typing-extensions==4.15.0 \
     #   google-genai
     #   limits
     #   openai
+    #   opentelemetry-api
     #   pydantic
     #   pydantic-core
     #   sqlalchemy
