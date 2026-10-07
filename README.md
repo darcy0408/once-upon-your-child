@@ -8,6 +8,9 @@
 
 > **Note:** This app supports social-emotional learning. It is not therapy, counseling, or medical treatment, and makes no clinical claims.
 
+> **License:** source-available under the [PolyForm Noncommercial License 1.0.0](./LICENSE.md). You may read, run and modify this code for noncommercial purposes; commercial use needs the licensor's permission. The Once Upon YOUR Child name and logo are not licensed.
+> Required Notice: Copyright (c) 2026 Once Upon YOUR Child! LLC (https://github.com/darcy0408)
+
 **Live app:** `https://onceuponyourchild.app` · **Production backend:** `https://story-weaver-app-production.up.railway.app`
 
 ## What This App Does
@@ -455,7 +458,9 @@ CI/CD: `.github/workflows/cicd.yml` (main pipeline — frontend tests/build + Cl
 
 ## License
 
-MIT License — see LICENSE file for details.
+[PolyForm Noncommercial License 1.0.0](./LICENSE.md) — source-available; noncommercial use permitted, commercial use needs the licensor's permission. The Once Upon YOUR Child name and logo are not licensed.
+
+Required Notice: Copyright (c) 2026 Once Upon YOUR Child! LLC (https://github.com/darcy0408)
 
 ## Acknowledgments
 
