@@ -8,6 +8,11 @@ import pytest
 # Ensure backend path is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+# An unset FLASK_ENV means production (MT-455), and importing the config in
+# production without real secrets fails by design. A test run that did not
+# choose an environment is a test environment.
+os.environ.setdefault("FLASK_ENV", "testing")
+
 from backend.app import create_app
 from backend.database import db
 
