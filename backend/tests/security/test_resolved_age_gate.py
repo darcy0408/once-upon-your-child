@@ -22,6 +22,7 @@ from backend.models import User
 def _headers_for(user_id: str) -> dict:
     payload = {
         "sub": user_id,
+        "type": "access",
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }
     token = jwt.encode(payload, "dev-secret-key", algorithm="HS256")

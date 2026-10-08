@@ -30,6 +30,7 @@ def _create_user(user_id: str, tier: str) -> str:
     payload = {
         "user_id": user_id,
         "sub": user_id,
+        "type": "access",
         "email": f"{user_id}@example.com",
         "subscription_tier": tier,
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),

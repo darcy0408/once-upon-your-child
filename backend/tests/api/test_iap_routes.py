@@ -41,6 +41,7 @@ def _auth_headers(user_id):
         {
             "user_id": user_id,
             "sub": user_id,
+            "type": "access",
             "exp": int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
         },
         "dev-secret-key",

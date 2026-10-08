@@ -13,7 +13,12 @@ from flask_jwt_extended import (
 from sqlalchemy.exc import IntegrityError
 
 from ..database import db
-from ..middleware.auth import require_admin, require_auth, require_owner
+from ..middleware.auth import (
+    require_admin,
+    require_auth,
+    require_owner,
+    token_version_matches,
+)
 from ..models.user import User
 from ..openrouter_image_generator import OpenRouterImageGenerator
 from ..quality_service import StoryQualityService
@@ -399,7 +404,10 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             identity=user.id,
             additional_claims={"tv": getattr(user, "token_version", 0) or 0},
         )
-        refresh_token = create_refresh_token(identity=user.id)
+        refresh_token = create_refresh_token(
+            identity=user.id,
+            additional_claims={"tv": getattr(user, "token_version", 0) or 0},
+        )
         # CMP-5 / PP-13: stamp activity so the retention purge job does not
         # treat a freshly-issued anonymous session as inactive.
         try:
@@ -459,7 +467,10 @@ def create_utility_blueprint(logger, log_error, limiter=None):
                 identity=user.id,
                 additional_claims={"tv": getattr(user, "token_version", 0) or 0},
             )
-            refresh_token = create_refresh_token(identity=user.id)
+            refresh_token = create_refresh_token(
+                identity=user.id,
+                additional_claims={"tv": getattr(user, "token_version", 0) or 0},
+            )
             # CMP-5 / PP-13: stamp activity so the data-retention purge job
             # does not treat a still-active account as inactive.
             try:
@@ -495,9 +506,14 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         if not user:
             return jsonify({"error": "User not found"}), 401
 
+        # A refresh token minted before the user's token_version was bumped
+        # (logout-everywhere / data deletion) must not mint new access tokens.
+        old_claims = get_jwt()
+        if not token_version_matches(user, old_claims):
+            return jsonify({"error": "Token revoked"}), 401
+
         # Blocklist the consumed refresh token so it cannot be reused even within
         # its remaining TTL (refresh token rotation / family invalidation).
-        old_claims = get_jwt()
         old_jti = old_claims.get("jti")
         old_exp = old_claims.get("exp")
         if old_jti and old_exp:
@@ -507,7 +523,10 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             identity=user.id,
             additional_claims={"tv": getattr(user, "token_version", 0) or 0},
         )
-        new_refresh = create_refresh_token(identity=user.id)
+        new_refresh = create_refresh_token(
+            identity=user.id,
+            additional_claims={"tv": getattr(user, "token_version", 0) or 0},
+        )
         # CMP-5 / PP-13: a token refresh means the app is in active use —
         # stamp activity so the retention purge job leaves this account alone.
         try:

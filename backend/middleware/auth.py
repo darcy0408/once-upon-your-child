@@ -49,6 +49,102 @@ def _get_jwt_secret():
     return secret
 
 
+_blocklist_redis = None
+_blocklist_redis_url = None
+
+
+def is_jti_blocklisted(jti):
+    """Return True if this JWT ID was written to the Redis revocation blocklist.
+
+    Shared by require_auth/optional_auth and by flask-jwt-extended's
+    token_in_blocklist_loader (app.py) so both auth paths agree.
+
+    Degrades gracefully: with no Redis configured, or Redis unreachable, the
+    check is skipped so a Redis outage never locks users out of the app.
+    """
+    global _blocklist_redis, _blocklist_redis_url
+
+    if not jti:
+        return False
+    redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
+    if not redis_url:
+        return False
+    try:
+        if _blocklist_redis is None or _blocklist_redis_url != redis_url:
+            import redis as _redis_lib
+
+            # One pooled client per process — this runs on every
+            # authenticated request, so don't reconnect each time.
+            _blocklist_redis = _redis_lib.from_url(
+                redis_url, socket_connect_timeout=1, socket_timeout=1
+            )
+            _blocklist_redis_url = redis_url
+        return bool(_blocklist_redis.exists(f"jwt:blocklist:{jti}"))
+    except Exception as exc:
+        logger.warning(
+            "JWT blocklist: Redis unavailable (%s) — skipping revocation check", exc
+        )
+        return False
+
+
+def _decode_access_token(token):
+    """Decode a bearer token and confirm it is a live *access* token.
+
+    Raises jwt.InvalidTokenError (bad signature, expired, wrong type,
+    blocklisted) or ValueError (JWT secret not configured).
+
+    The `type` check matters: refresh tokens are signed with the same secret
+    and live 30 days, so without it a refresh token works as a bearer token
+    on every protected route (MT-454). A token with no `type` claim is
+    rejected too — every token this app issues carries one.
+    """
+    if token.startswith("Bearer "):
+        token = token[7:]
+
+    data = jwt.decode(token, _get_jwt_secret(), algorithms=["HS256"])
+
+    if data.get("type") != "access":
+        raise jwt.InvalidTokenError("not an access token")
+    if is_jti_blocklisted(data.get("jti")):
+        raise jwt.InvalidTokenError("token has been revoked")
+    return data
+
+
+def token_version_matches(user, claims):
+    """Token-version revocation check.
+
+    The `tv` claim minted at token issue time must still match the user's
+    stored token_version. Bumping User.token_version (e.g. on logout or
+    data-deletion) invalidates every outstanding token for that user.
+    """
+    stored_tv = getattr(user, "token_version", 0) or 0
+    token_tv = claims.get("tv", 0) or 0
+    return token_tv == stored_tv
+
+
+def _user_from_optional_token(token):
+    """Resolve the user for an optional-auth request, or None.
+
+    Applies the same checks as require_auth (access type, blocklist,
+    token_version) — a token require_auth would refuse must not identify
+    a user here either (MT-456).
+    """
+    try:
+        data = _decode_access_token(token)
+    except (jwt.InvalidTokenError, ValueError):
+        # Invalid token is fine for optional auth
+        return None
+
+    # Identity is standardized on the `sub` claim.
+    user_id = data.get("sub")
+    if not user_id:
+        return None
+    user = db.session.get(User, user_id)
+    if not user or not token_version_matches(user, data):
+        return None
+    return user
+
+
 def require_auth(f):
     """
     Decorator that requires a valid JWT token.
@@ -63,11 +159,7 @@ def require_auth(f):
             return jsonify({"error": "Authentication required"}), 401
 
         try:
-            if token.startswith("Bearer "):
-                token = token[7:]
-
-            secret = _get_jwt_secret()
-            data = jwt.decode(token, secret, algorithms=["HS256"])
+            data = _decode_access_token(token)
 
             # Identity is standardized on the JWT `sub` claim. The legacy
             # `user_id` claim is no longer accepted as a fallback.
@@ -83,19 +175,13 @@ def require_auth(f):
                 logger.warning(f"Auth failed: User {user_id} not found in DB")
                 return jsonify({"error": "User not found"}), 401
 
-            # Token-version revocation check: the `tv` claim minted at token
-            # issue time must still match the user's stored token_version.
-            # Bumping User.token_version (e.g. on logout or data-deletion)
-            # invalidates every outstanding access token for that user.
-            stored_tv = getattr(current_user, "token_version", 0) or 0
-            token_tv = data.get("tv", 0) or 0
-            if token_tv != stored_tv:
+            if not token_version_matches(current_user, data):
                 logger.warning(
                     "Auth failed: token_version mismatch for user %s "
                     "(token tv=%s, stored tv=%s)",
                     user_id,
-                    token_tv,
-                    stored_tv,
+                    data.get("tv", 0) or 0,
+                    getattr(current_user, "token_version", 0) or 0,
                 )
                 return jsonify({"error": "Token revoked"}), 401
 
@@ -441,17 +527,8 @@ def get_current_user_id():
         # unauthenticated and spoofable. Identity comes only from a verified JWT.
         return None
 
-    try:
-        if token.startswith("Bearer "):
-            token = token[7:]
-
-        secret = _get_jwt_secret()
-        data = jwt.decode(token, secret, algorithms=["HS256"])
-        # Identity is standardized on the `sub` claim.
-        return data.get("sub")
-    except (jwt.InvalidTokenError, ValueError):
-        # Token invalid but that's okay for optional auth
-        return None
+    user = _user_from_optional_token(token)
+    return user.id if user else None
 
 
 def optional_auth(f):
@@ -468,23 +545,10 @@ def optional_auth(f):
         g.current_user_id = None
 
         if token:
-            try:
-                if token.startswith("Bearer "):
-                    token = token[7:]
-
-                secret = _get_jwt_secret()
-                data = jwt.decode(token, secret, algorithms=["HS256"])
-                # Identity is standardized on the `sub` claim.
-                user_id = data.get("sub")
-
-                if user_id:
-                    current_user = db.session.get(User, user_id)
-                    if current_user:
-                        request.current_user = current_user
-                        g.current_user_id = current_user.id
-            except (jwt.InvalidTokenError, ValueError):
-                # Invalid token is fine for optional auth
-                pass
+            current_user = _user_from_optional_token(token)
+            if current_user:
+                request.current_user = current_user
+                g.current_user_id = current_user.id
 
         return f(*args, **kwargs)
 
