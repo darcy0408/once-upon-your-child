@@ -99,11 +99,28 @@ def test_get_usage_stats_success(client, setup_data):
     data = response.get_json()
 
     assert data["stories_this_month"] == 45
-    assert data["stories_limit"] == 100
+    assert data["stories_limit"] == 150
     assert data["characters_count"] == 3
     assert data["characters_limit"] == 5
     assert "period_start" in data
     assert "period_end" in data
+
+
+@pytest.mark.parametrize(
+    "tier,expected_limit",
+    [("free", 5), ("premium", 150), ("family", 0)],
+)
+def test_usage_stats_story_limit_matches_enforced_quota(
+    client, setup_data, tier, expected_limit
+):
+    """The reported cap is the one ai_quota enforces; 0 means unlimited."""
+    with client.application.app_context():
+        user_id = _create_user(subscription_tier=tier)
+
+    headers = _auth_headers(client.application, user_id)
+    response = client.get(f"/api/user/{user_id}/usage-stats", headers=headers)
+    assert response.status_code == 200
+    assert response.get_json()["stories_limit"] == expected_limit
 
 
 def test_get_usage_stats_user_not_found(client, setup_data):

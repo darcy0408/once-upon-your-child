@@ -14,6 +14,7 @@ from backend.models.consent_record import (
     ConsentVerificationCode,
 )
 from backend.models.story import Story
+from backend.utils.ai_quota import _get_monthly_limit
 from backend.utils.app_helpers import is_production
 from backend.utils.audit import audit_log
 from backend.utils.email_service import (
@@ -58,11 +59,13 @@ def _hash_consent_code(code):
     return hashlib.sha256(code.encode("utf-8")).hexdigest()
 
 
-# Subscription limits
+# Character limits per tier. Story limits are deliberately not listed here:
+# usage-stats reports the monthly cap from backend/utils/ai_quota.py, the
+# module that enforces it, so the read-out can't drift from the real limit.
 SUBSCRIPTION_LIMITS = {
-    "free": {"stories": 10, "characters": 2},
-    "premium": {"stories": 100, "characters": 5},
-    "family": {"stories": 500, "characters": 10},
+    "free": {"characters": 2},
+    "premium": {"characters": 5},
+    "family": {"characters": 10},
 }
 
 
@@ -140,7 +143,8 @@ def create_user_routes_blueprint(limiter=None):
 
             response = {
                 "stories_this_month": stories_this_month,
-                "stories_limit": limits["stories"],
+                # 0 = unlimited, the same convention the client's TierLimits uses.
+                "stories_limit": _get_monthly_limit(tier) or 0,
                 "characters_count": characters_count,
                 "characters_limit": limits["characters"],
                 "period_start": _format_timestamp(period_start),
