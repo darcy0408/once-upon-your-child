@@ -46,6 +46,7 @@ import 'services/grace_period_service.dart';
 import 'services/grace_period_analytics.dart';
 import 'subscription_models.dart';
 import 'services/subscription_service.dart';
+import 'services/usage_stats_service.dart';
 import 'widgets/app_bottom_navigation.dart';
 import 'widgets/bedtime_launch_sheet.dart';
 import 'services/caregiver_service.dart';
@@ -330,7 +331,8 @@ class _StoryScreenState extends State<StoryScreen> {
   final bool _magicPulse = false;
   final _achievementService = AchievementService();
   AchievementSummary? _achievementSummary;
-  GracePeriodStatus? _gracePeriodStatus;
+  // Set from the backend's usage-stats count, never from a local counter.
+  bool _monthlyLimitReached = false;
   bool _loggedGraceBanner = false;
 
   final int _currentPhase = 0;
@@ -429,7 +431,6 @@ class _StoryScreenState extends State<StoryScreen> {
     _loadSavedStories();
     _loadSubscriptionInfo();
     _loadAchievementSummary();
-    _refreshGracePeriodStatus();
     _handleInitialRoute();
   }
 
@@ -470,18 +471,18 @@ class _StoryScreenState extends State<StoryScreen> {
       _currentSubscription = subscription;
       _remainingStoriesToday = remaining;
     });
-    unawaited(_refreshGracePeriodStatus());
+    unawaited(_refreshMonthlyLimit());
   }
 
-  Future<void> _refreshGracePeriodStatus() async {
-    final status = await GracePeriodService.getStatus(
-      _currentSubscription?.tier.name ?? 'free',
-    );
-    if (mounted) {
-      setState(() {
-        _gracePeriodStatus = status;
-      });
-    }
+  Future<void> _refreshMonthlyLimit() async {
+    final userId = await UserIdentityService.getOrCreateUserId();
+    final usage = await UsageStatsService.fetch(userId);
+    // A failed read leaves the last known state alone; the backend still
+    // rejects an over-limit generation on its own.
+    if (usage == null || !mounted) return;
+    setState(() {
+      _monthlyLimitReached = usage.monthlyStoryLimitReached;
+    });
   }
 
   Future<void> _loadAchievementSummary() async {
@@ -905,7 +906,7 @@ class _StoryScreenState extends State<StoryScreen> {
                   if (_selectedCharacter != null)
                     _ContinueAsHeroChip(character: _selectedCharacter!),
                   const SizedBox(height: 40),
-                  if ((_gracePeriodStatus?.shouldShowHardLimit ?? false))
+                  if (_monthlyLimitReached)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Material(
@@ -938,7 +939,7 @@ class _StoryScreenState extends State<StoryScreen> {
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                             subtitle: Text(
-                              'You\'ve hit this month\'s free limit. Tap to upgrade and keep creating stories.',
+                              'You\'ve hit this month\'s story limit. Tap to upgrade and keep creating stories.',
                               style: TextStyle(color: Colors.red.shade700),
                             ),
                             trailing: const Icon(Icons.arrow_forward_ios,
@@ -959,12 +960,11 @@ class _StoryScreenState extends State<StoryScreen> {
                       scale: _magicPulse ? 1.05 : 1.0,
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.auto_awesome),
-                        onPressed:
-                            (_gracePeriodStatus?.shouldShowHardLimit ?? false)
-                                ? null
-                                : () {
-                                    _onCreateButtonPressed();
-                                  },
+                        onPressed: _monthlyLimitReached
+                            ? null
+                            : () {
+                                _onCreateButtonPressed();
+                              },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                               vertical: 16, horizontal: 18),
