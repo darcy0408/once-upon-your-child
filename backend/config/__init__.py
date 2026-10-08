@@ -38,6 +38,23 @@ if not os.environ.get("GEMINI_MODEL_FREE"):
 logger.debug(f"DEFAULT GEMINI_MODEL_FREE = {os.environ.get('GEMINI_MODEL_FREE')}")
 
 
+_NON_PRODUCTION_ENVS = ("dev", "development", "testing")
+
+
+def env_is_production(name=None) -> bool:
+    """The one rule for "is this environment production?".
+
+    Everything that is not explicitly dev or testing is production — an unset
+    or unrecognised FLASK_ENV fails closed. This is the same rule that picks
+    the config class below, so the two cannot disagree. Inside a running app,
+    prefer backend.utils.app_helpers.is_production(), which reads the loaded
+    config (IS_PRODUCTION).
+    """
+    if name is None:
+        name = os.environ.get("FLASK_ENV") or "prod"
+    return name.strip().lower() not in _NON_PRODUCTION_ENVS
+
+
 def _get_required_secret(key_name, allow_dev_fallback=True):
     """
     Get a required secret from environment variables.
@@ -47,10 +64,7 @@ def _get_required_secret(key_name, allow_dev_fallback=True):
     if value:
         return value
 
-    env = os.environ.get("FLASK_ENV", "development")
-    is_production = env in ("prod", "production")
-
-    if is_production:
+    if env_is_production():
         raise ValueError(
             f"SECURITY ERROR: {key_name} must be set in production environment!"
         )
@@ -73,6 +87,10 @@ def _as_bool(name: str, default: bool = False) -> bool:
 
 class Config:
     """Base configuration."""
+
+    # Production unless a subclass says otherwise (fail closed). Read through
+    # backend.utils.app_helpers.is_production().
+    IS_PRODUCTION = True
 
     # SECRET_KEY is required in production - no silent fallback
     SECRET_KEY = _get_required_secret("SECRET_KEY")
@@ -257,6 +275,7 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration."""
 
+    IS_PRODUCTION = False
     DEBUG = True
     basedir = os.path.abspath(os.path.dirname(__file__))
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
@@ -276,6 +295,7 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     """Testing configuration."""
 
+    IS_PRODUCTION = False
     TESTING = True
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
@@ -305,6 +325,8 @@ config_by_name = {
     "default": ProductionConfig,
 }
 
-# Get config key from environment
-key = os.environ.get("FLASK_ENV", "prod")
-config = config_by_name[key]
+# Get config key from environment. An unrecognised FLASK_ENV gets the
+# production config (matching env_is_production) rather than a KeyError at
+# import.
+key = os.environ.get("FLASK_ENV") or "prod"
+config = config_by_name.get(key, ProductionConfig)

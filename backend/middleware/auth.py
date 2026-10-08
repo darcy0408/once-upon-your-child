@@ -20,6 +20,7 @@ from functools import wraps
 import jwt
 from flask import current_app, g, jsonify, request
 
+from backend.config import env_is_production
 from backend.database import db
 from backend.models.consent_record import CURRENT_POLICY_VERSION, ConsentRecord
 from backend.models.user import User
@@ -40,7 +41,7 @@ def _get_jwt_secret():
     secret = os.getenv("JWT_SECRET_KEY")
     if not secret or secret == "dev-secret-key":
         # In production, this should never happen
-        if os.getenv("FLASK_ENV", "production") in ("prod", "production"):
+        if env_is_production():
             logger.error("JWT_SECRET_KEY not properly configured in production!")
             raise ValueError("JWT_SECRET_KEY must be set in production")
         # In dev, allow but warn

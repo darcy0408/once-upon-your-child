@@ -1,13 +1,13 @@
 import json
-import os
 import re
 import time
 import uuid
 from datetime import datetime, timezone
 
-from flask import g, jsonify, request
+from flask import current_app, g, has_app_context, jsonify, request
 from flask_limiter.util import get_remote_address
 
+from ..config import env_is_production
 from ..models.user import User
 
 # Keywords inappropriate for ALL ages — always block regardless of age band.
@@ -52,7 +52,17 @@ _KEYWORDS_YOUNG_ONLY = [
 
 
 def is_production() -> bool:
-    return os.getenv("RAILWAY_ENVIRONMENT") == "production"
+    """Whether this process is serving production.
+
+    The single source of truth is the loaded config class (IS_PRODUCTION), so
+    the test-scaffolding gates, HSTS and error redaction can never disagree
+    with the config the app actually booted with. Outside an app context
+    (import time, a bare Celery task) it falls back to the same FLASK_ENV rule
+    that selects that class. Unknown means production.
+    """
+    if has_app_context():
+        return bool(current_app.config.get("IS_PRODUCTION", True))
+    return env_is_production()
 
 
 def get_user_identifier() -> str:

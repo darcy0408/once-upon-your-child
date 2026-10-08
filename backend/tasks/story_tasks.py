@@ -197,7 +197,7 @@ def _resolve_story_provider() -> str:
 
             in_production = is_production()
         except Exception:
-            in_production = os.environ.get("RAILWAY_ENVIRONMENT") == "production"
+            in_production = True  # can't tell — warn rather than stay silent
         if in_production:
             logger.warning(
                 "STORY_GEN_PROVIDER=%r in PRODUCTION: children's story text is being "

@@ -152,8 +152,37 @@ def _run_security_assertions(app, config_name: str) -> None:
     Raises RuntimeError on any critical failure so the process exits cleanly
     rather than serving traffic with a broken security posture.
     """
-    is_prod = config_name in ("prod", "production")
+    is_prod = bool(app.config.get("IS_PRODUCTION", True))
     errors = []
+
+    # ── One definition of production ──────────────────────────────────────────
+    # The config class decides (IS_PRODUCTION). A Railway production
+    # environment that booted a dev config would run with dev secrets, a
+    # throwaway SQLite file and live test endpoints.
+    if not is_prod and os.getenv("RAILWAY_ENVIRONMENT") == "production":
+        errors.append(
+            f"Railway environment is 'production' but FLASK_ENV selected the "
+            f"non-production config '{config_name}'. Set FLASK_ENV=prod."
+        )
+
+    if is_prod:
+        # ── Flask secret ──────────────────────────────────────────────────────
+        secret_key = app.config.get("SECRET_KEY") or ""
+        if not secret_key or secret_key == "dev-secret_key-fallback":
+            errors.append(
+                "SECRET_KEY is missing or is the dev fallback. "
+                "Set a strong SECRET_KEY in production."
+            )
+
+        # ── Database ──────────────────────────────────────────────────────────
+        # Without DATABASE_URL the config silently falls back to a SQLite file
+        # inside the container, which is wiped on every deploy.
+        db_uri = app.config.get("SQLALCHEMY_DATABASE_URI") or ""
+        if not db_uri or db_uri.startswith("sqlite"):
+            errors.append(
+                "DATABASE_URL is not set in production (the app would fall back "
+                "to an ephemeral SQLite file and lose data on every deploy)."
+            )
 
     # ── JWT secret ────────────────────────────────────────────────────────────
     jwt_secret = app.config.get("JWT_SECRET_KEY", "")
@@ -817,7 +846,7 @@ def create_app(config_name):
     jwt = JWTManager(app)
     jwt_secret = app.config.get("JWT_SECRET_KEY") or os.getenv("JWT_SECRET_KEY")
     if not jwt_secret or jwt_secret == "dev-secret-key":
-        if os.getenv("FLASK_ENV") in ("prod", "production"):
+        if app.config.get("IS_PRODUCTION", True):
             raise ValueError(
                 "SECURITY ERROR: JWT_SECRET_KEY must be set in production!"
             )
