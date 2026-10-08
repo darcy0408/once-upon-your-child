@@ -4,6 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../subscription_models.dart';
+
 class GracePeriodService {
   static const String _accountCreatedKey = 'account_created_at';
   static const String _storiesThisMonthKey = 'stories_this_month';
@@ -12,7 +14,10 @@ class GracePeriodService {
 
   // Grace period configuration
   static const int gracePeriodDays = 3;
-  static const int freeTierStoryLimit = 10; // 10 stories/month free tier
+  // Read from TierLimits so this can't drift from the real cap again (it sat
+  // at 10 while TierLimits and backend/utils/ai_quota.py both said 5).
+  static int get freeTierStoryLimit =>
+      TierLimits.forTier(SubscriptionTier.free).maxStoriesPerMonth;
   static const int unlimitedLimit = 999; // Effectively unlimited
 
   /// Get user's account age in days
