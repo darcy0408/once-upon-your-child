@@ -94,6 +94,7 @@ def _get_token(user_id, tier="free"):
     payload = {
         "user_id": user_id,
         "sub": user_id,
+        "type": "access",
         "subscription_tier": tier,
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }

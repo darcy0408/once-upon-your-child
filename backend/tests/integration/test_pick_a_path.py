@@ -633,7 +633,7 @@ class TestGetInteractiveStoryAPI:
         import jwt
 
         other_token = jwt.encode(
-            {"user_id": "other-user-999", "exp": 9999999999},
+            {"user_id": "other-user-999", "type": "access", "exp": 9999999999},
             "dev-secret-key",
             algorithm="HS256",
         )

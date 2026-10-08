@@ -826,26 +826,17 @@ def create_app(config_name):
     app.config["JWT_SECRET_KEY"] = jwt_secret
 
     # JWT revocation — check Redis blocklist for spent refresh tokens.
-    # Degrades gracefully: if Redis is unavailable the check is skipped so a
-    # Redis outage never locks users out of the app.
+    # Same lookup require_auth uses, so both auth paths agree. Degrades
+    # gracefully: if Redis is unavailable the check is skipped so a Redis
+    # outage never locks users out of the app.
+    try:
+        from backend.middleware.auth import is_jti_blocklisted
+    except ImportError:
+        from middleware.auth import is_jti_blocklisted
+
     @jwt.token_in_blocklist_loader
     def _check_token_revoked(jwt_header, jwt_payload):
-        jti = jwt_payload.get("jti")
-        if not jti:
-            return False
-        redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
-        if not redis_url:
-            return False
-        try:
-            import redis as _redis_lib
-
-            _r = _redis_lib.from_url(redis_url, socket_connect_timeout=1)
-            return bool(_r.exists(f"jwt:blocklist:{jti}"))
-        except Exception as exc:
-            logger.warning(
-                "JWT blocklist: Redis unavailable (%s) — skipping revocation check", exc
-            )
-            return False
+        return is_jti_blocklisted(jwt_payload.get("jti"))
 
     # Database query monitoring
     from sqlalchemy import event

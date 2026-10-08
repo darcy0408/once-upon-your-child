@@ -67,6 +67,7 @@ def _auth_headers(app, user_id):
         {
             "user_id": user_id,
             "sub": user_id,
+            "type": "access",
             "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
         },
         secret,
