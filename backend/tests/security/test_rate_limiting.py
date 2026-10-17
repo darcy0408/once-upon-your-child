@@ -414,6 +414,9 @@ def test_tts_rate_limit(ratelimit_client, ratelimit_app):
 
     # Mock the TTS service with the real method signature: synthesize() calls
     # generate_speech_with_timestamps() and unpacks an (audio, timestamps) tuple.
+    # The same mock also stands in for the free Edge fallback (Gemini is
+    # patched to None below), so the test never reaches the network: the live
+    # Edge websocket now answers 403 and nothing would be cached.
     fake_audio = b"\x00\x01\x02"
     mock_service = MagicMock()
     mock_service.generate_speech_with_timestamps.return_value = (fake_audio, [])
@@ -434,6 +437,8 @@ def test_tts_rate_limit(ratelimit_client, ratelimit_app):
     # quota/limiter path is actually exercised.
     with patch.dict(os.environ, {"TTS_DISABLED": "false"}), patch(
         "backend.routes.tts_routes._get_tts_service", return_value=mock_service
+    ), patch("backend.routes.tts_routes._get_gemini_service", return_value=None), patch(
+        "backend.routes.tts_routes._get_edge_service", return_value=mock_service
     ), patch(
         "backend.utils.ai_quota.check_tts_quota", side_effect=fake_check_tts_quota
     ), patch(
