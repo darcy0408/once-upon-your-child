@@ -529,6 +529,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                           (requestData['scene_residents'] as List?)
                               ?.whereType<Map<String, String>>()
                               .toList(),
+                      worldBible: requestData['worldBible']?.toString(),
+                      conflictHook: requestData['conflictHook']?.toString(),
+                      sensoryPalette: requestData['sensoryPalette']?.toString(),
                       interests: wd.selectedEmotionChips.isNotEmpty
                           ? wd.selectedEmotionChips
                           : null,
