@@ -17,61 +17,6 @@ def create_admin_blueprint(logger, limiter=None):
 
         return decorator
 
-    @admin_bp.route("/admin/run-db-optimization", methods=["POST"])
-    @require_auth
-    @require_admin
-    @rate_limit("5 per minute")
-    def run_db_optimization():
-        """Run database optimization indexes (one-time setup)"""
-        try:
-            sql_statements = [
-                "CREATE INDEX IF NOT EXISTS idx_stories_created_at ON stories(created_at DESC)",
-                "CREATE INDEX IF NOT EXISTS idx_stories_user_id ON stories(user_id)",
-                "CREATE INDEX IF NOT EXISTS idx_stories_theme ON stories(theme)",
-                "CREATE INDEX IF NOT EXISTS idx_stories_user_created ON stories(user_id, created_at DESC)",
-                "CREATE INDEX IF NOT EXISTS idx_stories_user_theme ON stories(user_id, theme)",
-                "CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)",
-                "CREATE INDEX IF NOT EXISTS idx_users_subscription_tier ON users(subscription_tier)",
-                "CREATE INDEX IF NOT EXISTS idx_users_tier_created ON users(subscription_tier, created_at)",
-                "CREATE INDEX IF NOT EXISTS idx_stories_user_theme ON stories(user_id, theme)",
-            ]
-
-            created_indexes = []
-            with db.engine.connect() as conn:
-                for sql in sql_statements:
-                    try:
-                        conn.execute(text(sql))
-                        conn.commit()
-                        index_name = (
-                            sql.split("idx_")[1].split(" ")[0]
-                            if "idx_" in sql
-                            else "unknown"
-                        )
-                        created_indexes.append(f"idx_{index_name}")
-                        logger.info(f"✓ Created index: idx_{index_name}")
-                    except Exception as e:
-                        # Index might already exist - that's ok
-                        logger.warning(f"Index creation warning: {str(e)}")
-
-            return (
-                jsonify(
-                    {
-                        "status": "success",
-                        "message": "Database optimization complete",
-                        "indexes_processed": len(sql_statements),
-                        "indexes": created_indexes,
-                    }
-                ),
-                200,
-            )
-
-        except Exception:
-            logger.exception("Failed to run database optimization")
-            return (
-                jsonify({"error": "Database optimization failed. Check server logs."}),
-                500,
-            )
-
     @admin_bp.route("/admin/add-missing-columns", methods=["POST"])
     @require_auth
     @require_admin
