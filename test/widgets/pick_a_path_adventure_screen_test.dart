@@ -144,6 +144,42 @@ void main() {
       // Check for app bar title
       expect(find.text('Pick-A-Path Adventure'), findsOneWidget);
     });
+
+    testLargeWidgets('MT-465: forwards the scene world bible to the backend',
+        (tester) async {
+      Map<String, dynamic>? startBody;
+      final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) {
+          return _authMock(request);
+        }
+        startBody = jsonDecode(request.body) as Map<String, dynamic>;
+        return http.Response(
+          jsonEncode(PickAPathTestHelpers.createStartStoryResponseJson()),
+          200,
+        );
+      });
+
+      InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PickAPathAdventureScreen(
+            userId: 'test_user',
+            character: PickAPathTestHelpers.createTestCharacter(),
+            theme: 'Magic',
+            worldBible: 'A lantern-lit harbor town.',
+            conflictHook: 'The tide bell has gone silent.',
+            sensoryPalette: 'salt air, warm wood',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(startBody?['worldBible'], 'A lantern-lit harbor town.');
+      expect(startBody?['conflictHook'], 'The tide bell has gone silent.');
+      expect(startBody?['sensoryPalette'], 'salt air, warm wood');
+    });
   });
 
   group('PickAPathAdventureScreen - Initial Segment Display', () {
