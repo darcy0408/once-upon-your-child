@@ -18,6 +18,7 @@ import '../services/api_service_manager.dart';
 import '../services/caregiver_service.dart';
 import '../services/child_profile_service.dart';
 import '../services/isar_service.dart';
+import '../services/progression_service.dart';
 import '../saved_stories_screen.dart';
 import '../widgets/bedtime_launch_sheet.dart';
 import 'chronicles_list_screen.dart';
@@ -205,6 +206,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
     _pageController = PageController(initialPage: _currentStep);
 
     _loadSavedCharacters();
+    _loadStoriesCreated();
     // Attempt to restore any in-progress wizard draft (crash/network recovery).
     // Only restore when the caller hasn't pre-populated wizard data.
     if (widget.initialWizardData == null && widget.initialCharacter == null) {
@@ -300,6 +302,23 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
           _wizardData.characterName = name;
         });
       }
+    }
+  }
+
+  /// Stories created on this device (`ProgressionService`). Null until loaded.
+  int? _storiesCreated;
+
+  /// Heroes / Stories / Life Quests only appear once there is a saved hero or
+  /// at least one created story.
+  bool get _showLibraryNav =>
+      _savedCharacters.isNotEmpty || (_storiesCreated ?? 0) > 0;
+
+  Future<void> _loadStoriesCreated() async {
+    try {
+      final progress = await ProgressionService().getUserProgress();
+      if (mounted) setState(() => _storiesCreated = progress.storiesCreated);
+    } catch (_) {
+      // Unknown count: leave the nav hidden rather than guess.
     }
   }
 
@@ -620,6 +639,10 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                // First-run declutter: Life Quests / Heroes / Stories
+                                // stay hidden until there is something to open
+                                // (a saved hero or a created story).
+                                if (_showLibraryNav) ...[
                                 // Life Quests button — labeled for Explorer/Adventurer,
                                 // icon-only for mature. Sprout intentionally has NO
                                 // top-bar Big Feelings entry: the scene-picker "Big
@@ -711,6 +734,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                                     },
                                     tooltip: 'My Stories',
                                   ),
+                                ],
                                 // Chronicles button — only when a character is selected
                                 if (_wizardData.characterId != null)
                                   IconButton(

@@ -7,6 +7,7 @@ following the Interactive Children's Adventure Story Weaver specification.
 import json
 from typing import Any, Dict, List, Optional
 
+from backend.services.scene_residents import build_scene_residents_line
 from backend.services.story_service import transform_parent_context_to_story_guidance
 
 
@@ -422,11 +423,20 @@ SAFETY RULES:
         personality_sliders: Optional[Dict[str, int]] = None,
         chronicle_context: Optional[Dict] = None,
         big_feelings_context: Optional[Dict] = None,
+        scene_residents: Optional[List[Dict]] = None,
+        scene_visited_before: bool = False,
+        scene_known_names: Optional[List[str]] = None,
     ) -> str:
         """
         Build the opening segment prompt for a new interactive adventure.
         """
         age_band = cls.get_age_band(age)
+        # Chunk 4: who lives in this scene — a world-facts line beside the
+        # WORLD BIBLE, never routed through _build_companion_context (that
+        # would trigger the Companion Contract's "MUST appear by name").
+        scene_residents_suffix = cls._scene_residents_suffix(
+            scene_residents, child_name, scene_visited_before, scene_known_names
+        )
         age_config = cls.AGE_BANDS[age_band]
 
         # Calculate PER-SEGMENT word count
@@ -585,7 +595,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **THEME**: {theme} | **TONE**: {tone}
 - **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
 - **SENSORY PALETTE**: {final_sensory}
-{('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + world_bible) if world_bible else ''}
+{('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + world_bible) if world_bible else ''}{scene_residents_suffix}
 {cls._build_chronicle_block(chronicle_context) if chronicle_context else ''}
 {challenge_instruction}
 {virtue_instruction}
@@ -675,6 +685,13 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
         path_depth = cls.PATH_DEPTHS[age_band].get(length, 10)
 
         child_name = character.get("name", "Hero")
+        # Chunk 4: same scene residents as the opening (see build_opening_prompt).
+        scene_residents_suffix = cls._scene_residents_suffix(
+            story_context.get("scene_residents"),
+            child_name,
+            bool(story_context.get("scene_visited_before")),
+            story_context.get("scene_known_names"),
+        )
         gender = character.get("gender", "not specified")
         pronouns = character.get("pronouns", "")
         gender_text = (
@@ -824,7 +841,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **INVENTORY**: {", ".join(inventory) if inventory else "None"}
 - **STATE**: location={story_state.get('location', 'Unknown')}, goal={story_state.get('goal', 'Unknown')}
 - **SENSORY PALETTE**: {final_sensory}
-{('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + story_context.get('world_bible', '')) if story_context.get('world_bible') else ''}
+{('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + story_context.get('world_bible', '')) if story_context.get('world_bible') else ''}{scene_residents_suffix}
 {continuation_virtue}
 {continuation_feelings}
 
@@ -1485,6 +1502,29 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
                 "Try a different plan",
             ]
         return [choice(text, idx + 1) for idx, text in enumerate(options[:count])]
+
+    @staticmethod
+    def _scene_residents_suffix(
+        residents: Optional[List[Dict]],
+        hero: str,
+        visited_before: bool = False,
+        known_names: Optional[List[str]] = None,
+    ) -> str:
+        """Newline-prefixed scene-residents lines, or "" (prompt unchanged)."""
+        clean = [
+            r
+            for r in (residents or [])
+            if isinstance(r, dict) and isinstance(r.get("name"), str) and r["name"]
+        ]
+        if not clean:
+            return ""
+        line = build_scene_residents_line(
+            clean,
+            hero,
+            visited_before=visited_before,
+            known_names=[n for n in (known_names or []) if isinstance(n, str)],
+        )
+        return "\n" + line if line else ""
 
     @staticmethod
     def _build_chronicle_block(ctx: Dict) -> str:

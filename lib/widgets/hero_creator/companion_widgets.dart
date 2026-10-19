@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:math' as math;
 import '../../models.dart';
+import '../../services/companion_unlock_service.dart';
 import '../../theme/age_band_theme.dart';
 import '../../utils/motion_utils.dart';
 import '../safe_asset_image.dart';
@@ -433,12 +435,23 @@ class CompanionImageGrid extends StatelessWidget {
   /// Maximum companions selectable at once. Sprout = 1, others = 3.
   final int maxCompanions;
 
+  /// Stories this child has created, used to gate the band's built-in magic
+  /// companions (see CompanionUnlockService). Null = no gating, every
+  /// companion is selectable.
+  final int? storiesCreated;
+
+  /// When true, companions that have not arrived yet render as dimmed
+  /// silhouettes with a caption. When false they are hidden (Sprout).
+  final bool showLocked;
+
   const CompanionImageGrid({
     super.key,
     required this.wizardData,
     required this.onChanged,
     this.onCompanionTapped,
     this.maxCompanions = 3,
+    this.storiesCreated,
+    this.showLocked = true,
   });
 
   @override
@@ -484,7 +497,12 @@ class CompanionImageGrid extends StatelessWidget {
       }
 
       final atLimit = wizardData.companionNames.length >= maxCompanions;
-      List<Widget> buttons = companionList.map((c) {
+      final stories = storiesCreated;
+      bool isLocked(CompanionData c) =>
+          stories != null &&
+          !CompanionUnlockService.isUnlocked(band.band, c.id, stories);
+      final unlockedList = companionList.where((c) => !isLocked(c)).toList();
+      List<Widget> buttons = unlockedList.map<Widget>((c) {
         final isSelected = wizardData.companionNames.contains(c.name) ||
             wizardData.selectedCompanions.contains(c.id);
         return _CompanionImageButton(
@@ -552,6 +570,20 @@ class CompanionImageGrid extends StatelessWidget {
         ));
       }
 
+      if (showLocked) {
+        final lockedList = companionList.where(isLocked).toList();
+        for (int i = 0; i < lockedList.length; i++) {
+          buttons.add(_LockedCompanionTile(
+            key: ValueKey('locked_companion_${lockedList[i].id}'),
+            companion: lockedList[i],
+            size: itemSize,
+            isMature: band.band.isMature,
+            caption:
+                i == 0 ? 'arrives after your next story' : 'arrives later',
+          ));
+        }
+      }
+
       final rows = <Widget>[];
       for (int i = 0; i < buttons.length; i += perRow) {
         final rowItems = buttons.sublist(
@@ -571,6 +603,139 @@ class CompanionImageGrid extends StatelessWidget {
 
       return Column(children: rows);
     });
+  }
+}
+
+/// A companion that has not arrived yet: the art as a dimmed greyscale
+/// silhouette with a small lock and an "arrives ..." caption. Tapping gives a
+/// gentle wiggle and nothing else; it is never a paywall.
+class _LockedCompanionTile extends StatefulWidget {
+  final CompanionData companion;
+  final double size;
+  final bool isMature;
+  final String caption;
+
+  const _LockedCompanionTile({
+    super.key,
+    required this.companion,
+    required this.size,
+    required this.isMature,
+    required this.caption,
+  });
+
+  @override
+  State<_LockedCompanionTile> createState() => _LockedCompanionTileState();
+}
+
+class _LockedCompanionTileState extends State<_LockedCompanionTile>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _wiggle = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 380),
+  );
+
+  static const _greyscale = ColorFilter.matrix(<double>[
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0, 0, 0, 1, 0, //
+  ]);
+
+  @override
+  void dispose() {
+    _wiggle.dispose();
+    super.dispose();
+  }
+
+  void _onTap() {
+    if (MotionPrefs.reduceMotion(context)) return;
+    _wiggle.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.size;
+    final width = size;
+    final height = widget.isMature ? (size * 1.25).roundToDouble() : size;
+    final shape = widget.isMature
+        ? BoxShape.rectangle
+        : BoxShape.circle;
+    final radius = widget.isMature ? BorderRadius.circular(18) : null;
+    final art = ColorFiltered(
+      colorFilter: _greyscale,
+      child: SafeAssetImage(
+        widget.companion.imagePath,
+        width: width,
+        height: height,
+        fit: widget.isMature ? BoxFit.contain : BoxFit.cover,
+        alignment: widget.companion.imageAlignment,
+        placeholder: Container(
+          width: width,
+          height: height,
+          color: const Color(0xFF3A2363),
+        ),
+      ),
+    );
+    final tile = Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        shape: shape,
+        borderRadius: radius,
+        color: const Color(0xFF14141F),
+        border: Border.all(color: Colors.white24, width: 1.5),
+      ),
+      child: ClipRRect(
+        borderRadius: radius ?? BorderRadius.circular(size),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            art,
+            Container(color: Colors.black.withAlpha(165)),
+            const Center(
+              child: Icon(Icons.lock_rounded, color: Colors.white70, size: 26),
+            ),
+          ],
+        ),
+      ),
+    );
+    return Semantics(
+      button: true,
+      label: 'A new buddy, ${widget.caption}',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: _onTap,
+        child: SizedBox(
+          width: size + 8,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedBuilder(
+                animation: _wiggle,
+                builder: (_, child) => Transform.rotate(
+                  angle: math.sin(_wiggle.value * math.pi * 4) *
+                      0.07 *
+                      (1 - _wiggle.value),
+                  child: child,
+                ),
+                child: tile,
+              ),
+              const SizedBox(height: 5),
+              Text(
+                widget.caption,
+                textAlign: TextAlign.center,
+                softWrap: true,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white70,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

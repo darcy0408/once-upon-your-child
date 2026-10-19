@@ -177,14 +177,23 @@ void main() {
     innerPV.controller!.jumpToPage(4);
     await tester.pump(const Duration(milliseconds: 500));
 
-    await pumpUntilFound(finder: find.text('Go Solo — no companions'));
+    // Default hero age is 8 → band-aware label "Just me — no buddies".
+    await pumpUntilFound(finder: find.text('Just me — no buddies'));
 
     // --- STEP 3: Companion Selector ---
-    final goSoloBtn = find.text('Go Solo — no companions');
+    final goSoloBtn = find.text('Just me — no buddies');
     await tester.ensureVisible(goSoloBtn);
     await tester.tap(goSoloBtn);
 
     await tester.pump(const Duration(milliseconds: 500));
+    // Go solo now also advances the page; the test jumped pages directly so
+    // the inner step's own page counter is stale and opens the avatar gallery.
+    // Close it so the outer wizard is reachable.
+    final nav = tester.state<NavigatorState>(find.byType(Navigator).first);
+    if (nav.canPop()) {
+      nav.pop();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
     // Force transition to the outer wizard's review step (MagicReviewStep)
     final outerPV2 = tester.widgetList<PageView>(find.byType(PageView)).first;
     outerPV2.controller!.jumpToPage(1);

@@ -13,7 +13,6 @@ import pytest
 from backend.tasks.story_tasks import (
     _is_limerick_page_ok,
     _is_ltr_rhyme_quality_ok,
-    _limerick_words_rhyme,
     _words_rhyme,
 )
 
@@ -52,6 +51,79 @@ def test_ltr_rhyme_quality_accepts_within_page_rhyme():
         "She made a hop. Then reached the top.",
     ]
     assert _is_ltr_rhyme_quality_ok(pages)
+
+
+def test_ltr_rhyme_quality_accepts_multi_syllable_couplets():
+    # MT-438: the Easy Reader check scored on the FIRST vowel, so a page
+    # ending in a multi-syllable word never matched its rhyme ("inside" →
+    # "insid" vs "wide" → "id"). Correctly rhyming stories were rejected,
+    # burning both retries and the extra generation on every age-8 story.
+    pages = [
+        "Luna found a door that was tall and wide.",
+        "A small sleepy fox was curled up inside.",
+        "They walked to the creaky garden gate.",
+        "The fox had a plan they would celebrate.",
+    ]
+    assert _is_ltr_rhyme_quality_ok(pages)
+
+
+def test_ltr_rhyme_quality_accepts_multi_syllable_within_page_rhyme():
+    # Same defect on the within-page sentence-ending path.
+    pages = [
+        "Luna stirred the soup with a spoon. Then she found a red balloon.",
+        "The fox ran up a sandy dune. He waved at the pale white moon.",
+        "They looked at the hills all around. Then sat on the cool soft ground.",
+        "A tiny mouse began to seek. They heard a happy little squeak.",
+    ]
+    assert _is_ltr_rhyme_quality_ok(pages)
+
+
+# The two age-8 stories MT-438 reproduced against `60bf10cd`, reduced to their
+# page-ending words. Both were rejected by the old check and regenerated twice
+# before shipping unchanged. One-line pages carry no sentence punctuation, so
+# the within-page fallback never fires and the couplet path is what is scored.
+_MT438_STORY_ONE_ENDINGS = [
+    "sun",
+    "fun",
+    "sound",
+    "ground",
+    "air",
+    "compare",
+    "deep",
+    "leap",
+    "free",
+    "glee",
+]
+
+_MT438_STORY_TWO_ENDINGS = [
+    "sky",
+    "spry",
+    "glee",
+    "see",
+    "free",
+    "carefree",
+    "ease",
+    "breeze",
+    "peace",
+    "release",
+]
+
+
+def _pages_ending_in(words):
+    return [f"Luna and the fox went out to play and found the {w}" for w in words]
+
+
+def test_mt438_reproduced_story_one_now_passes():
+    assert _is_ltr_rhyme_quality_ok(_pages_ending_in(_MT438_STORY_ONE_ENDINGS))
+
+
+def test_mt438_reproduced_story_two_now_passes():
+    # Passes on 3 of 5 pairs, which meets the 0.6 ratio exactly. The two that
+    # still miss are spelling-to-sound gaps the tail does not model: ease/breeze
+    # (final s is voiced, so "e:s" vs "e:z") and peace/release (soft c, so "e:c"
+    # vs "e:s"). Tracked as MT-448 — if that is fixed this becomes 5 of 5, and
+    # if the ratio is ever raised above 0.6 this story starts failing again.
+    assert _is_ltr_rhyme_quality_ok(_pages_ending_in(_MT438_STORY_TWO_ENDINGS))
 
 
 # ── Limerick Mode: one AABBA verse per page ───────────────────────────────
@@ -156,11 +228,11 @@ def test_limerick_check_rejects_empty():
         ("quick", "stick"),  # qu is not a vowel
     ],
 )
-def test_limerick_rhyme_hears_long_vowels_across_spellings(word_a, word_b):
+def test_rhyme_hears_long_vowels_across_spellings(word_a, word_b):
     # 2026-09-13 probe: the spelling-only tail rejected most of the real
     # rhymes gpt-5-mini wrote (moon/tune, seek/squeak, dune/moon), and the
     # model's workaround was to rhyme a word with itself.
-    assert _limerick_words_rhyme(word_a, word_b)
+    assert _words_rhyme(word_a, word_b)
 
 
 @pytest.mark.parametrize(
@@ -175,8 +247,8 @@ def test_limerick_rhyme_hears_long_vowels_across_spellings(word_a, word_b):
         ("home", "big"),
     ],
 )
-def test_limerick_rhyme_keeps_short_vowels_apart_from_long(word_a, word_b):
-    assert not _limerick_words_rhyme(word_a, word_b)
+def test_rhyme_keeps_short_vowels_apart_from_long(word_a, word_b):
+    assert not _words_rhyme(word_a, word_b)
 
 
 def test_limerick_page_survives_one_weak_b_rhyme():

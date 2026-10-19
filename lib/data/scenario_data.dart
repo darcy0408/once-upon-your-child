@@ -1,6 +1,62 @@
 import '../theme/age_band_theme.dart';
 import '../theme/age_band_asset_resolver.dart';
 
+/// Someone who lives in a scene and stays there. Companions travel with the
+/// hero; residents never do. The story may let the hero meet them, and on a
+/// return visit to the same scene they greet the hero as an old friend.
+///
+/// Names and descriptions can change by band because the scene itself changes
+/// (the Sprout "Stomp with the Dinosaurs!" tile is the volcano scene, so its
+/// resident is a dinosaur). Sprout = ages 5 and under; mature = 13 and up.
+class SceneResident {
+  final String name;
+  final String whatTheyAre;
+  final String personality;
+  final String? sproutName;
+  final String? sproutWhatTheyAre;
+  final String? sproutPersonality;
+  final String? matureName;
+  final String? matureWhatTheyAre;
+  final String? maturePersonality;
+
+  const SceneResident({
+    required this.name,
+    required this.whatTheyAre,
+    required this.personality,
+    this.sproutName,
+    this.sproutWhatTheyAre,
+    this.sproutPersonality,
+    this.matureName,
+    this.matureWhatTheyAre,
+    this.maturePersonality,
+  });
+
+  String nameForAge(int age) {
+    if (age <= 5 && sproutName != null) return sproutName!;
+    if (age >= 13 && matureName != null) return matureName!;
+    return name;
+  }
+
+  String whatTheyAreForAge(int age) {
+    if (age <= 5 && sproutWhatTheyAre != null) return sproutWhatTheyAre!;
+    if (age >= 13 && matureWhatTheyAre != null) return matureWhatTheyAre!;
+    return whatTheyAre;
+  }
+
+  String personalityForAge(int age) {
+    if (age <= 5 && sproutPersonality != null) return sproutPersonality!;
+    if (age >= 13 && maturePersonality != null) return maturePersonality!;
+    return personality;
+  }
+
+  /// Wire shape for the `scene_residents` request field.
+  Map<String, String> toRequestJson(int age) => {
+        'name': nameForAge(age),
+        'what': whatTheyAreForAge(age),
+        'personality': personalityForAge(age),
+      };
+}
+
 class ScenarioCard {
   final String id;
   final String emoji;
@@ -67,6 +123,10 @@ class ScenarioCard {
   // Both are optional — falls back to illustration when null.
   final String? youngBandSceneId;
   final String? olderBandSceneId;
+  // Characters who live in this scene (see [SceneResident]). Order matters:
+  // the first is the one younger heroes meet. Empty for "Imagine It" (the
+  // child invents the place) and the superhero routing card.
+  final List<SceneResident> residents;
 
   const ScenarioCard({
     required this.id,
@@ -101,7 +161,13 @@ class ScenarioCard {
     this.sproutIllustration,
     this.youngBandSceneId,
     this.olderBandSceneId,
+    this.residents = const [],
   });
+
+  /// The residents a hero of [age] can meet here: one for ages 8 and under
+  /// (a single new face is plenty for a short story), up to two from 9.
+  List<SceneResident> residentsForAge(int age) =>
+      residents.take(age <= 8 ? 1 : 2).toList();
 
   /// Get the title appropriate for the given age.
   String titleForAge(int age) {
@@ -230,6 +296,35 @@ class ScenarioData {
       sproutIllustration: 'assets/images/ui/sprout/tiles/space.webp',
       youngBandSceneId: 'star_village',
       olderBandSceneId: 'ruined_citadel',
+      residents: [
+        SceneResident(
+          name: 'the Season Keeper',
+          whatTheyAre:
+              'a gentle clock-like being who keeps the four seasons in balance',
+          personality:
+              'calm and tick-tock tidy; a little flustered when seasons mix, but always kind',
+          // Sprout's tile is "Zoom to the Stars!" — a space trip.
+          sproutName: 'Twinkle',
+          sproutWhatTheyAre: 'a tiny, giggly star who lives up in the sky',
+          sproutPersonality:
+              'bright and friendly; loves to wave and play peekaboo behind the moon',
+          matureName: 'the Chronokeeper',
+          matureWhatTheyAre:
+              'an ageless being bound to a great celestial orrery, tending the gates between the seasons',
+          maturePersonality:
+              'precise and patient, quietly lonely, and glad of a visitor who stays to talk',
+        ),
+        SceneResident(
+          name: 'Flurry',
+          whatTheyAre:
+              'a snowflake sprite who loves sneaking through the summer door',
+          personality: 'giggly and curious; melts a little at the edges when excited',
+          matureWhatTheyAre:
+              'a snowflake sprite from the Winterhold who keeps slipping into the Summerlands',
+          maturePersonality:
+              'restless and funny, curious about every world but its own',
+        ),
+      ],
     ),
     ScenarioCard(
       id: 'volcano_dragons',
@@ -275,6 +370,33 @@ class ScenarioData {
       sproutIllustration: 'assets/images/ui/sprout/tiles/dinosaurs.webp',
       youngBandSceneId: 'enchanted_forest',
       olderBandSceneId: 'tidal_shrine',
+      residents: [
+        SceneResident(
+          name: 'the Elder Dragon',
+          whatTheyAre:
+              'the biggest, oldest dragon, who sleeps in a warm nest at the heart of the mountain',
+          personality:
+              'sleepy, warm-hearted and wise; wakes for a song and hums when happy',
+          // Sprout's tile is "Stomp with the Dinosaurs!".
+          sproutName: 'Rumble',
+          sproutWhatTheyAre: 'a giant, gentle long-necked dinosaur',
+          sproutPersonality:
+              'slow and smiley; loves a stomping game and a nap in the warm sun',
+          matureWhatTheyAre:
+              'an ancient dragon who remembers the world before people and sleeps at the caldera\'s heart',
+          maturePersonality:
+              'slow to speak and hard to impress, but fair, and quietly kind to anyone who truly listens',
+        ),
+        SceneResident(
+          name: 'Bubbles',
+          whatTheyAre: 'a young dragon who breathes shimmering bubbles instead of fire',
+          personality: 'eager and a little clumsy; desperate to be helpful',
+          matureWhatTheyAre:
+              'a young dragon still learning the colony\'s old customs, whose breath comes out as bubbles',
+          maturePersonality:
+              'earnest and impatient with tradition, and loyal to anyone who treats them as more than a hatchling',
+        ),
+      ],
     ),
     ScenarioCard(
       id: 'neon_jungle',
@@ -314,6 +436,30 @@ class ScenarioData {
       sproutIllustration: 'assets/images/ui/sprout/tiles/forest.webp',
       youngBandSceneId: 'enchanted_forest',
       olderBandSceneId: 'deep_archive',
+      residents: [
+        SceneResident(
+          name: 'Lumi',
+          whatTheyAre:
+              'a tiny tree frog whose glow grows brighter whenever someone whispers something kind',
+          personality: 'shy at first, then delighted; croaks back every kind word',
+          sproutWhatTheyAre: 'a tiny frog who glows like a night-light',
+          sproutPersonality: 'shy and sweet; glows extra bright when you smile',
+          matureWhatTheyAre:
+              'a luminous tree frog who carries messages along the jungle\'s whisper-network',
+          maturePersonality: 'watchful and brave in the dark; never forgets a kindness',
+        ),
+        SceneResident(
+          name: 'Zuzu',
+          whatTheyAre: 'a silk-wing parrot who repeats the whispers she hears',
+          personality:
+              'chatty and loyal; can\'t keep a secret, but never repeats an unkind word',
+          matureName: 'the Elder Grove',
+          matureWhatTheyAre:
+              'a circle of ancient trees that remember everything the jungle has ever whispered',
+          maturePersonality:
+              'slow, patient and wise; they speak rarely, and only to someone willing to wait',
+        ),
+      ],
     ),
     ScenarioCard(
       id: 'crystal_cavern',
@@ -356,6 +502,27 @@ class ScenarioData {
       sproutIllustration: 'assets/images/ui/sprout/tiles/ocean.webp',
       youngBandSceneId: 'ocean_depths',
       olderBandSceneId: 'deep_archive',
+      residents: [
+        SceneResident(
+          name: 'Glimmer',
+          whatTheyAre: 'a crystal snail who leaves a trail of sparkling gemstone dust',
+          personality: 'slow, gentle and never lost; loves a soft whisper',
+          sproutWhatTheyAre: 'a tiny snail who leaves a glittery trail',
+          sproutPersonality: 'shy and sweet; giggles at whispers',
+          matureWhatTheyAre:
+              'an old crystal snail whose gemstone trail maps every tunnel in the caverns',
+          maturePersonality: 'wry, unhurried and loyal; always knows the way back',
+        ),
+        SceneResident(
+          name: 'Pip',
+          whatTheyAre: 'an echo-bat who repeats the last nice thing it heard',
+          personality: 'chatty and curious; squeaks a warning near loose crystals',
+          matureWhatTheyAre:
+              'an echo-bat that remembers every voice that ever passed through the caves',
+          maturePersonality:
+              'talkative, curious and protective of anyone who keeps their voice gentle',
+        ),
+      ],
     ),
     ScenarioCard(
       id: 'storm_chaser_sky',
@@ -396,6 +563,29 @@ class ScenarioData {
       sproutIllustration: 'assets/images/ui/sprout/tiles/castle.webp',
       youngBandSceneId: 'cloud_castle',
       olderBandSceneId: 'orbital_station',
+      residents: [
+        SceneResident(
+          name: 'Puff',
+          whatTheyAre: 'a cloud-sheep whose wool is soft, cool fog',
+          personality: 'bouncy and cuddly; always ready to cushion a fall',
+          sproutWhatTheyAre: 'a bouncy sheep made of fluffy cloud',
+          sproutPersonality: 'silly and snuggly; catches anyone who tumbles',
+          matureWhatTheyAre:
+              'a cloud-sheep the crew keeps aboard, whose fog-wool cushions hard landings',
+          maturePersonality:
+              'unbothered by any storm; leans against whoever looks most worried',
+        ),
+        SceneResident(
+          name: 'Wren',
+          whatTheyAre:
+              'the fortress\'s weather-weaver, who knits clouds into useful shapes',
+          personality: 'cheerful and unflappable, even in a thunderstorm',
+          matureWhatTheyAre:
+              'the citadel\'s storm-navigator, who reads lightning like a map',
+          maturePersonality:
+              'dry-humoured, steady under pressure, and fiercely loyal to the crew',
+        ),
+      ],
     ),
     ScenarioCard(
       id: 'vanishing_colors',
@@ -438,6 +628,30 @@ class ScenarioData {
       sproutIllustration: 'assets/images/ui/sprout/tiles/candy_land.webp',
       youngBandSceneId: 'cloud_castle',
       olderBandSceneId: 'ruined_citadel',
+      residents: [
+        SceneResident(
+          name: 'the Palette Guardian',
+          whatTheyAre: 'a wise old tortoise with a rainbow-striped shell',
+          personality: 'patient and kind; never hurries, and always has time for a hello',
+          sproutName: 'the Rainbow Turtle',
+          sproutWhatTheyAre: 'a slow, smiley turtle with a rainbow shell',
+          sproutPersonality: 'gentle and cosy; loves slow walks and big hugs',
+          matureWhatTheyAre:
+              'an ancient tortoise whose shell holds every colour the realm has lost and found',
+          maturePersonality:
+              'unhurried and kind; remembers what most have forgotten, and says it gently',
+        ),
+        SceneResident(
+          name: 'Dab',
+          whatTheyAre: 'a Paint Sprite, a tiny winged being who carries the colour sky-blue',
+          personality: 'bubbly and brave for their size; zips ahead, then waits for you',
+          matureName: 'Ochre',
+          matureWhatTheyAre:
+              'a soft-spoken Chromatist painter who restores the realm one brushstroke at a time',
+          maturePersonality:
+              'quietly hopeful; believes gentleness works better than fighting',
+        ),
+      ],
     ),
 
     // --- REAL-LIFE HEROES ---
@@ -472,6 +686,26 @@ class ScenarioData {
       adultTitle: 'The Cost of Showing Up',
       adultDescription:
           'Everyone already has their people. Showing up as yourself is the risk no one warns you about.',
+      residents: [
+        SceneResident(
+          name: 'Waffles',
+          whatTheyAre: 'a scruffy, friendly dog who lives in a house beside the park',
+          personality: 'waggy and gentle; nudges shy kids toward the fun',
+          matureName: 'Ms. Reyes',
+          matureWhatTheyAre:
+              'the school librarian, who keeps a quiet corner open at lunch',
+          maturePersonality:
+              'warm and unfussy; notices who is sitting alone without making a big deal of it',
+        ),
+        SceneResident(
+          name: 'Jules',
+          whatTheyAre: 'a kid who runs the big four-square game at the park',
+          personality: 'loud, funny and quick to wave a newcomer in',
+          matureWhatTheyAre: 'a classmate who runs the lunchtime card game',
+          maturePersonality:
+              'funny, a little chaotic, and always making room at the table',
+        ),
+      ],
     ),
     ScenarioCard(
       id: 'standing_tall',
@@ -505,6 +739,26 @@ class ScenarioData {
       adultTitle: 'Holding the Line',
       adultDescription:
           'Holding your ground without losing yourself — or becoming what you are standing against.',
+      residents: [
+        SceneResident(
+          name: 'Coach Bea',
+          whatTheyAre: 'the teacher on playground duty',
+          personality:
+              'calm and fair; lets kids try first, and always comes when asked',
+          matureWhatTheyAre: 'the PE teacher most students actually trust',
+          maturePersonality:
+              'direct and fair; on your side without taking over',
+        ),
+        SceneResident(
+          name: 'Rosa',
+          whatTheyAre: 'a quiet kid who has been made to feel small',
+          personality: 'shy and thoughtful; brave once someone stands beside her',
+          matureWhatTheyAre:
+              'a quiet classmate who has been on the receiving end too',
+          maturePersonality:
+              'observant and dry-witted; slow to trust, steady once she does',
+        ),
+      ],
     ),
     ScenarioCard(
       id: 'big_feelings_quest',
@@ -546,6 +800,30 @@ class ScenarioData {
       adultWorldBible:
           'The inner landscape is not a storm to be conquered — it never was. The terrain is built from every feeling that was swallowed, every rage that had nowhere to go, every grief that got called overreacting. The Feeling Keepers here are not therapists or guides; they are the feelings themselves, grown large from years of being ignored. Anxiety has built an elaborate city. Grief has become a body of water with no clear shore. The work is not to drain the lake or demolish the city — it is to sit on the bank without needing it to be different. Each evidence-based coping technique has a physical form here, a place you can return to. But the portal home opens only when you stop trying to find it.',
       adultThematicQuestion: "What are you trying not to feel right now?",
+      residents: [
+        SceneResident(
+          name: 'Moss',
+          whatTheyAre:
+              'a calm old turtle who lives by the still lake at the centre of the land',
+          personality: 'gentle and quiet; always ready to breathe slowly together',
+          sproutName: 'the Calm Turtle',
+          sproutWhatTheyAre: 'a slow, sleepy turtle who sits by a calm pond',
+          sproutPersonality: 'soft and cosy; takes big, slow breaths with you',
+          matureWhatTheyAre:
+              'an unhurried old turtle on the lakeshore who never tells anyone how to feel',
+          maturePersonality:
+              'steady and unbothered by storms; listens far more than it speaks',
+        ),
+        SceneResident(
+          name: 'Drizzle',
+          whatTheyAre:
+              'a gentle rain-cloud who drifts close when someone feels sad',
+          personality: 'soft-spoken and kind; shows that crying is okay',
+          matureWhatTheyAre:
+              'a rain-cloud that settles over the valley whenever it gets heavy',
+          maturePersonality: 'honest about sadness and never in a hurry to chase it away',
+        ),
+      ],
     ),
     ScenarioCard(
       id: 'change_is_coming',
@@ -580,6 +858,25 @@ class ScenarioData {
       adultTitle: 'Starting Over',
       adultDescription:
           'Everything familiar is gone and no one here knows your name. Home is something you rebuild.',
+      residents: [
+        SceneResident(
+          name: 'Marmalade',
+          whatTheyAre:
+              'a ginger neighbourhood cat who knows every secret corner of the new place',
+          personality: 'curious and unbothered; a great tour guide, on its own schedule',
+          matureWhatTheyAre:
+              'a ginger cat who has adopted the new building\'s stairwell',
+          maturePersonality:
+              'aloof until it decides you are worth it, then quietly always around',
+        ),
+        SceneResident(
+          name: 'Mr. Haddad',
+          whatTheyAre: 'the neighbour next door, who waters tomatoes over the fence',
+          personality: 'chatty and kind; always has a story about the street',
+          maturePersonality:
+              'friendly without prying; remembers what it was like to be new here',
+        ),
+      ],
     ),
     ScenarioCard(
       id: 'safe_space',
@@ -642,6 +939,21 @@ class ScenarioData {
       adultTitle: 'Every Answer Costs Something',
       adultDescription:
           'Every witness is hiding something, and the truth, once found, cannot be returned.',
+      residents: [
+        SceneResident(
+          name: 'Mr. Finch',
+          whatTheyAre:
+              'the old night caretaker who knows every creaky stair of the building',
+          personality: 'kindly and a bit absent-minded; full of half-remembered clues',
+          maturePersonality:
+              'kind and observant; knows more than he says, and says it only when asked straight',
+        ),
+        SceneResident(
+          name: 'Inkwell',
+          whatTheyAre: 'a black cat who prowls the halls at night',
+          personality: 'aloof and watchful; always somewhere interesting',
+        ),
+      ],
     ),
     ScenarioCard(
       id: 'survival_island',
@@ -671,6 +983,20 @@ class ScenarioData {
       adultTitle: 'Only What You Carry',
       adultDescription:
           'No map, no signal, no rescue — only what you carry and what you are willing to do to make it through.',
+      residents: [
+        SceneResident(
+          name: 'Scout',
+          whatTheyAre:
+              'a clever island crow who watches from the cliffs and drops shiny things near useful spots',
+          personality: 'nosy and clever; seems to want you to do well',
+        ),
+        SceneResident(
+          name: 'Old Bristle',
+          whatTheyAre:
+              'a shaggy wild goat who knows where fresh water trickles from the rocks',
+          personality: 'grumpy-looking but harmless; follows anyone who shares',
+        ),
+      ],
     ),
     // --- SUPERHERO MODE (ages 3-5 / Sprout band) ---
     // Registered so [WizardDataMapper] doesn't choke when wizardData.selectedScenario

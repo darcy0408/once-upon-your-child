@@ -12,6 +12,7 @@ def _auth_headers_for_user(user: User) -> dict[str, str]:
     payload = {
         "user_id": user.id,
         "sub": user.id,
+        "type": "access",
         "email": user.email,
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }
@@ -233,6 +234,7 @@ def test_unauthenticated_requests_are_rejected(client, method, url, kwargs):
             jwt.encode(
                 {
                     "user_id": "test_user_123",
+                    "type": "access",
                     "exp": int(
                         (datetime.now(timezone.utc) - timedelta(hours=1)).timestamp()
                     ),

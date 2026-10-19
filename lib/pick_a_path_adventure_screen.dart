@@ -45,6 +45,11 @@ class PickAPathAdventureScreen extends StatefulWidget {
     this.chronicleId, // Living Story Chronicle ID (null = normal story)
     this.bigFeelingsContext,
     this.companions,
+    this.scenarioId,
+    this.sceneResidents,
+    this.worldBible,
+    this.conflictHook,
+    this.sensoryPalette,
   });
 
   final String userId;
@@ -64,6 +69,18 @@ class PickAPathAdventureScreen extends StatefulWidget {
   /// Companion list built from WizardData — passed directly to backend so
   /// companions appear in the story even for wizard-created temp characters.
   final List<Map<String, dynamic>>? companions;
+
+  /// The picked scene's id and who lives there ({name, what, personality}).
+  /// The backend introduces them as locals — never as companions — and
+  /// recognises a return visit to the same scene.
+  final String? scenarioId;
+  final List<Map<String, String>>? sceneResidents;
+
+  /// MT-465: the picked scene's world bible, plot driver and atmosphere,
+  /// sent to the backend as `worldBible` / `conflictHook` / `sensoryPalette`.
+  final String? worldBible;
+  final String? conflictHook;
+  final String? sensoryPalette;
 
   @override
   State<PickAPathAdventureScreen> createState() =>
@@ -264,6 +281,11 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
           personalitySliders: widget.personalitySliders,
           chronicleContext: chronicleContext,
           bigFeelingsContext: widget.bigFeelingsContext,
+          scenarioId: widget.scenarioId,
+          sceneResidents: widget.sceneResidents,
+          worldBible: widget.worldBible,
+          conflictHook: widget.conflictHook,
+          sensoryPalette: widget.sensoryPalette,
         );
       });
 

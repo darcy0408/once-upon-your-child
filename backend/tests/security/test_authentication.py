@@ -89,6 +89,7 @@ def test_require_auth_expired_token(app, client):
 
     payload = {
         "user_id": "test_user_123",
+        "type": "access",
         "exp": int((datetime.now(timezone.utc) - timedelta(hours=1)).timestamp()),
     }
     expired_token = jwt.encode(payload, "dev-secret-key", algorithm="HS256")
@@ -105,6 +106,7 @@ def test_require_auth_user_not_found(app, client):
     payload = {
         "user_id": "ghost_user_404",
         "sub": "ghost_user_404",
+        "type": "access",
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }
     token = jwt.encode(payload, "dev-secret-key", algorithm="HS256")
@@ -131,6 +133,7 @@ def test_require_admin_success(app, client):
     payload = {
         "user_id": admin_id,
         "sub": admin_id,
+        "type": "access",
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }
     token = jwt.encode(payload, "dev-secret-key", algorithm="HS256")
@@ -345,6 +348,7 @@ def test_token_validation_edge_cases(app, client, auth_headers):
     payload = {
         "user_id": "missing_user_uuid",
         "sub": "missing_user_uuid",
+        "type": "access",
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }
     ghost_token = jwt.encode(payload, "dev-secret-key", algorithm="HS256")

@@ -437,7 +437,7 @@ class TestProviderFlagSequencing:
         PRODUCTION must still resolve (no enforcement) yet emit a loud warning —
         children's story text would otherwise reach an undisclosed processor."""
         monkeypatch.setenv("STORY_GEN_PROVIDER", "openrouter")
-        monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
+        monkeypatch.setenv("FLASK_ENV", "prod")
         warn = MagicMock()
         monkeypatch.setattr(story_tasks.logger, "warning", warn)
 
@@ -448,7 +448,7 @@ class TestProviderFlagSequencing:
         """The soft guard must NOT fire in local dev — 'openrouter' is the
         expected local provider and should resolve without an MT-307 warning."""
         monkeypatch.setenv("STORY_GEN_PROVIDER", "openrouter")
-        monkeypatch.delenv("RAILWAY_ENVIRONMENT", raising=False)
+        monkeypatch.setenv("FLASK_ENV", "dev")
         warn = MagicMock()
         monkeypatch.setattr(story_tasks.logger, "warning", warn)
 

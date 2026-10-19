@@ -312,3 +312,14 @@ SESSION_NOTES.md
 
 # Local pointer to the private session-notes directory (path stays off the public repo)
 .claude/notes-location.txt
+
+# Committed-by-accident artifacts (removed 2026-10-07): shell shortcuts, Office lock files, loose log/test dumps under docs/
+*.lnk
+~$*
+docs/logs_*.txt
+docs/*_output.txt
+docs/*_report.txt
+docs/test_results.txt
+docs/analysis_final_*.txt
+docs/flutter_test_*.txt
+docs/AGENTS_START_ROUND_2.txt

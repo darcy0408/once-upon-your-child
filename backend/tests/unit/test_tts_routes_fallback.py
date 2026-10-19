@@ -179,6 +179,7 @@ def under13_user_headers(under13_user):
     payload = {
         "user_id": under13_user.id,
         "sub": under13_user.id,
+        "type": "access",
         "email": under13_user.email,
         "subscription_tier": "free",
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
@@ -227,6 +228,7 @@ def teen_user_headers(teen_user):
     payload = {
         "user_id": teen_user.id,
         "sub": teen_user.id,
+        "type": "access",
         "email": teen_user.email,
         "subscription_tier": "free",
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),

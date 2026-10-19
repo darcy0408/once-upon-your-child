@@ -27,6 +27,13 @@ from backend.services.openai_story_generator import OpenAIStoryGenerator
 from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
 from backend.services.prompt_service import PromptService
 from backend.services.prompt_versioning import resolve as _resolve_prompt_version
+from backend.services.scene_residents import (
+    build_scene_residents_line,
+    find_prior_scene_visit,
+    known_resident_names,
+    normalize_scenario_id,
+    normalize_scene_residents,
+)
 from backend.services.story_generation_service import StoryGenerationService
 from backend.services.story_service import (
     AGE_CONSTRAINTS,
@@ -190,7 +197,7 @@ def _resolve_story_provider() -> str:
 
             in_production = is_production()
         except Exception:
-            in_production = os.environ.get("RAILWAY_ENVIRONMENT") == "production"
+            in_production = True  # can't tell — warn rather than stay silent
         if in_production:
             logger.warning(
                 "STORY_GEN_PROVIDER=%r in PRODUCTION: children's story text is being "
@@ -731,29 +738,6 @@ def _extract_sentence_end_words(page_text: str) -> list[str]:
     return words
 
 
-def _rhyme_key(word: str) -> str:
-    """Get a simple phonetic-ish tail used for lightweight rhyme matching."""
-    clean = re.sub(r"[^a-z]", "", word.lower())
-    clean = clean.replace("y", "i")  # Normalize y to i for phonetic matching
-    if len(clean) < 2:
-        return clean
-    if clean.endswith("e") and len(clean) > 3:
-        clean = clean[:-1]
-    # Use substring from last vowel to end (e.g., "cat" -> "at", "sun" -> "un")
-    match = re.search(r"[aeiou][a-z]*$", clean)
-    if match:
-        return match.group(0)
-    return clean[-2:]
-
-
-def _words_rhyme(word_a: str, word_b: str) -> bool:
-    if not word_a or not word_b:
-        return False
-    key_a = _rhyme_key(word_a)
-    key_b = _rhyme_key(word_b)
-    return len(key_a) >= 2 and key_a == key_b
-
-
 # Per-page word caps for the Learning-to-Read format check. Early-reader
 # pages are 1-2 short sentences; a complete AABBA limerick is 26-40 words.
 _LTR_MAX_WORDS_PER_PAGE = 25
@@ -762,7 +746,7 @@ _LIMERICK_MAX_WORDS_PER_PAGE = 45
 
 # Long-vowel spellings that share one sound, so seek/squeak, plane/rain,
 # moon/tune and boat/note score as the rhymes they are. "ii" is "igh" after
-# the rewrite in _limerick_rhyme_tail (high, light).
+# the rewrite in _rhyme_tail (high, light).
 _LIMERICK_LONG_VOWELS = {
     "ee": "e",
     "ea": "e",
@@ -776,15 +760,16 @@ _LIMERICK_LONG_VOWELS = {
 }
 
 
-def _limerick_rhyme_tail(word: str) -> str:
+def _rhyme_tail(word: str) -> str:
     """Tail from the LAST vowel group — the part of a word that carries rhyme.
 
-    ``_rhyme_key`` takes the tail from the FIRST vowel, so multi-syllable
-    words never match their rhymes ("inside" → "insid" vs "wide" → "id";
-    "debate" → "ebat" vs "gate" → "at"). Limerick lines lean on exactly those
-    words, so the limerick check scores on the final syllable instead. Kept
-    local to the limerick check so Rhyme Time / early-reader retry behaviour
-    is untouched.
+    The heuristic this replaced took the tail from the FIRST vowel, so no
+    multi-syllable word ever matched its rhyme ("inside" → "insid" vs "wide"
+    → "id"; "debate" → "ebat" vs "gate" → "at"). It scored the limerick check
+    only at first; MT-438 found the Easy Reader couplet check failing the same
+    way, rejecting correctly rhyming pages and spending both retries plus the
+    extra generation on every age-8 story. Both checks now score the final
+    syllable, which is the one that has to rhyme.
 
     The vowel group is reduced to its sound and marked long (``:``) when the
     spelling says so — a silent e, a long-vowel digraph, or a bare vowel
@@ -817,10 +802,10 @@ def _limerick_rhyme_tail(word: str) -> str:
     return f"{vowels}{':' if long_vowel else ''}{consonants}"
 
 
-def _limerick_words_rhyme(word_a: str, word_b: str) -> bool:
+def _words_rhyme(word_a: str, word_b: str) -> bool:
     if not word_a or not word_b:
         return False
-    return _limerick_rhyme_tail(word_a) == _limerick_rhyme_tail(word_b)
+    return _rhyme_tail(word_a) == _rhyme_tail(word_b)
 
 
 def _is_limerick_page_ok(page: str) -> bool:
@@ -846,10 +831,9 @@ def _is_limerick_page_ok(page: str) -> bool:
     if any(not w for w in ends):
         return False
     checks = (
-        _limerick_words_rhyme(ends[0], ends[1]),
-        _limerick_words_rhyme(ends[2], ends[3]),
-        _limerick_words_rhyme(ends[0], ends[4])
-        or _limerick_words_rhyme(ends[1], ends[4]),
+        _words_rhyme(ends[0], ends[1]),
+        _words_rhyme(ends[2], ends[3]),
+        _words_rhyme(ends[0], ends[4]) or _words_rhyme(ends[1], ends[4]),
     )
     return sum(checks) >= 2
 
@@ -1949,6 +1933,16 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             "companion_characters", []
         )  # List of character names
 
+        # Chunk 4: the picked scene and the characters who live there. Kept
+        # apart from companions on purpose — residents never travel with the
+        # hero and never join the MANDATORY names checklist.
+        scenario_id = normalize_scenario_id(kwargs.get("scenario_id"))
+        scene_residents = normalize_scene_residents(kwargs.get("scene_residents"), age)
+        # True only when the residents were actually written into the prompt,
+        # so a later visit only claims the hero "knows" people they could
+        # have met.
+        scene_residents_used = False
+
         try:
             character = (
                 db.session.get(Character, character_id) if character_id else None
@@ -2215,6 +2209,18 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 # persona. Anonymous + first-time characters get an empty
                 # block and the prompt is unchanged.
                 prior_block = _build_prior_adventures_block(character_id)
+                scene_line = ""
+                if scene_residents:
+                    visited_scene, met_lower = find_prior_scene_visit(
+                        character_id, scenario_id
+                    )
+                    scene_line = build_scene_residents_line(
+                        scene_residents,
+                        character_name,
+                        visited_before=visited_scene,
+                        known_names=known_resident_names(scene_residents, met_lower),
+                    )
+                    scene_residents_used = True
                 logger.info(
                     f"Using standard enhanced prompt (length: {story_length}, duration: {story_duration})"
                 )
@@ -2228,6 +2234,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     mood_physics=kwargs.get("mood_physics"),  # NEW
                     conflict_hook=kwargs.get("conflict_hook"),  # NEW
                     sensory_palette=kwargs.get("sensory_palette"),  # NEW
+                    world_bible=kwargs.get("world_bible", ""),  # MT-465
                     custom_elements=custom_elements,  # NEW: Free-form custom story requests
                     additional_characters=kwargs.get("additional_characters")
                     or char_details.get("additionalCharacters"),
@@ -2238,6 +2245,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     story_duration=story_duration,  # NEW: Duration-based generation
                     age=age,  # NEW: Pass age for calibration
                     prior_adventures_block=prior_block,
+                    scene_residents_line=scene_line,
                 )
                 prior_block_prepend = ""
             if prior_block is None:
@@ -3243,6 +3251,18 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # and references user.id). Failure must not break the response — the
             # story is already generated and the client expects it.
             if user_id and user_id != "anonymous":
+                # Chunk 4: remember which scene this was (and who lived there,
+                # if the prompt introduced them) for the return-visit lookup.
+                # Persist-only — the client response payload is unchanged.
+                persisted_content = story_payload
+                if scenario_id:
+                    persisted_content = {
+                        **story_payload,
+                        "scenario_id": scenario_id,
+                        "scene_residents": (
+                            scene_residents if scene_residents_used else []
+                        ),
+                    }
                 try:
                     db.session.add(
                         Story(
@@ -3258,7 +3278,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                             # payload so /task-status can recover a finished story
                             # from the DB once the Celery result expires (1h).
                             task_id=self.request.id,
-                            content=story_payload,
+                            content=persisted_content,
                             # F-01 (MT-187): tag the row with which prompt template
                             # produced it (sha256[:16] of the builder's live source).
                             prompt_template_id=prompt_template_id,

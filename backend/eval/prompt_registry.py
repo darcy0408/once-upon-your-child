@@ -75,7 +75,7 @@ class PromptTemplate:
 TEMPLATES: tuple[PromptTemplate, ...] = (
     PromptTemplate(
         template_id="T1_STANDARD",
-        content_hash="33ef5b2089822340",
+        content_hash="1301812c6c9123ba",
         source_file="backend/services/story_service.py",
         anchors=("AdvancedStoryEngine.generate_enhanced_prompt",),
         mode="standard",
@@ -411,15 +411,31 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         interpolated_vars=("character_id",),
         description="Recall of prior themes/cast; vary or build on rather than repeat.",
     ),
-    # T14/T15 — Pick-a-Path / Interactive Adventure (MT-453, closing F-05's
+    PromptTemplate(
+        template_id="T14_SCENE_RESIDENTS",
+        content_hash="6709d3ffd427b786",
+        source_file="backend/services/scene_residents.py",
+        anchors=("build_scene_residents_line",),
+        mode="standard",
+        age_bands=AGE_BANDS,
+        builder_function="build_scene_residents_line",
+        output_format="(conditional injection beside WORLD BIBLE in T1)",
+        interpolated_vars=("scene_residents", "character", "visited_before"),
+        description=(
+            "Who lives in the picked scene (never mandatory, never travels) and, "
+            "on a return visit, that the hero already knows them. Also spliced "
+            "into the Pick-a-Path opening/continuation prompts (T15/T16)."
+        ),
+    ),
+    # T15/T16 — Pick-a-Path / Interactive Adventure (MT-453, closing F-05's
     # drift-coverage gap). Different endpoint from story_service.py: a single
     # builder method handles every age band via InteractiveAdventurePromptBuilder
     # .AGE_BANDS, same shape as T1's single-function-for-all-bands pattern, so
     # one anchor each is enough. mode="pick_a_path" is a registry-only label —
     # it is not in MODES and is never passed to prompt_versioning.resolve().
     PromptTemplate(
-        template_id="T14_INTERACTIVE_OPENING",
-        content_hash="d0846da9dcd73d79",
+        template_id="T15_INTERACTIVE_OPENING",
+        content_hash="6d54c5adb202997d",
         source_file="backend/services/interactive_adventure_prompt_builder.py",
         anchors=("InteractiveAdventurePromptBuilder.build_opening_prompt",),
         mode="pick_a_path",
@@ -457,8 +473,8 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         ),
     ),
     PromptTemplate(
-        template_id="T15_INTERACTIVE_CONTINUATION",
-        content_hash="611cf719ac3f525b",
+        template_id="T16_INTERACTIVE_CONTINUATION",
+        content_hash="042b201b5d8364e1",
         source_file="backend/services/interactive_adventure_prompt_builder.py",
         anchors=("InteractiveAdventurePromptBuilder.build_continuation_prompt",),
         mode="pick_a_path",
@@ -479,7 +495,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
         ),
         description=(
             "Pick-A-Path continuation segment; choice-driven consequence; "
-            "same Companion Contract as T14, described behaviorally with no "
+            "same Companion Contract as T15, described behaviorally with no "
             "inline beat-type labels (MT-453)."
         ),
     ),
@@ -490,14 +506,14 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
 # runtime revision-hash counterpart in backend/services/prompt_versioning.py
 # (see TestRegistriesAgree.test_every_sendable_template_has_a_runtime_hash in
 # test_prompt_snapshot_anchors.py, which enforces that equality). T8_SAFETY_
-# GUARDRAILS/T9_STRICT_OUTPUT (static injections) and T11/T12/T13 (conditional
-# injections) are excluded as fragments composed into T1 — they don't define
-# independent cells. T14/T15 (Pick-a-Path) are excluded for a different
-# reason: they ARE complete, directly-sent prompts, but their endpoint never
-# calls prompt_versioning.resolve(), so there is no runtime hash for them to
-# agree with — adding them here would just make that test fail. They still
-# get full drift detection via TEMPLATES/content_hash; they just don't define
-# (mode, age_band) cells for the eval harness.
+# GUARDRAILS/T9_STRICT_OUTPUT (static injections) and T11/T12/T13/T14
+# (conditional injections) are excluded as fragments composed into T1 — they
+# don't define independent cells. T15/T16 (Pick-a-Path) are excluded for a
+# different reason: they ARE complete, directly-sent prompts, but their
+# endpoint never calls prompt_versioning.resolve(), so there is no runtime hash
+# for them to agree with — adding them here would just make that test fail.
+# They still get full drift detection via TEMPLATES/content_hash; they just
+# don't define (mode, age_band) cells for the eval harness.
 SENDABLE_TEMPLATE_IDS = frozenset(
     {
         "T1_STANDARD",

@@ -152,8 +152,37 @@ def _run_security_assertions(app, config_name: str) -> None:
     Raises RuntimeError on any critical failure so the process exits cleanly
     rather than serving traffic with a broken security posture.
     """
-    is_prod = config_name in ("prod", "production")
+    is_prod = bool(app.config.get("IS_PRODUCTION", True))
     errors = []
+
+    # ── One definition of production ──────────────────────────────────────────
+    # The config class decides (IS_PRODUCTION). A Railway production
+    # environment that booted a dev config would run with dev secrets, a
+    # throwaway SQLite file and live test endpoints.
+    if not is_prod and os.getenv("RAILWAY_ENVIRONMENT") == "production":
+        errors.append(
+            f"Railway environment is 'production' but FLASK_ENV selected the "
+            f"non-production config '{config_name}'. Set FLASK_ENV=prod."
+        )
+
+    if is_prod:
+        # ── Flask secret ──────────────────────────────────────────────────────
+        secret_key = app.config.get("SECRET_KEY") or ""
+        if not secret_key or secret_key == "dev-secret_key-fallback":
+            errors.append(
+                "SECRET_KEY is missing or is the dev fallback. "
+                "Set a strong SECRET_KEY in production."
+            )
+
+        # ── Database ──────────────────────────────────────────────────────────
+        # Without DATABASE_URL the config silently falls back to a SQLite file
+        # inside the container, which is wiped on every deploy.
+        db_uri = app.config.get("SQLALCHEMY_DATABASE_URI") or ""
+        if not db_uri or db_uri.startswith("sqlite"):
+            errors.append(
+                "DATABASE_URL is not set in production (the app would fall back "
+                "to an ephemeral SQLite file and lose data on every deploy)."
+            )
 
     # ── JWT secret ────────────────────────────────────────────────────────────
     jwt_secret = app.config.get("JWT_SECRET_KEY", "")
@@ -817,7 +846,7 @@ def create_app(config_name):
     jwt = JWTManager(app)
     jwt_secret = app.config.get("JWT_SECRET_KEY") or os.getenv("JWT_SECRET_KEY")
     if not jwt_secret or jwt_secret == "dev-secret-key":
-        if os.getenv("FLASK_ENV") in ("prod", "production"):
+        if app.config.get("IS_PRODUCTION", True):
             raise ValueError(
                 "SECURITY ERROR: JWT_SECRET_KEY must be set in production!"
             )
@@ -826,26 +855,17 @@ def create_app(config_name):
     app.config["JWT_SECRET_KEY"] = jwt_secret
 
     # JWT revocation — check Redis blocklist for spent refresh tokens.
-    # Degrades gracefully: if Redis is unavailable the check is skipped so a
-    # Redis outage never locks users out of the app.
+    # Same lookup require_auth uses, so both auth paths agree. Degrades
+    # gracefully: if Redis is unavailable the check is skipped so a Redis
+    # outage never locks users out of the app.
+    try:
+        from backend.middleware.auth import is_jti_blocklisted
+    except ImportError:
+        from middleware.auth import is_jti_blocklisted
+
     @jwt.token_in_blocklist_loader
     def _check_token_revoked(jwt_header, jwt_payload):
-        jti = jwt_payload.get("jti")
-        if not jti:
-            return False
-        redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
-        if not redis_url:
-            return False
-        try:
-            import redis as _redis_lib
-
-            _r = _redis_lib.from_url(redis_url, socket_connect_timeout=1)
-            return bool(_r.exists(f"jwt:blocklist:{jti}"))
-        except Exception as exc:
-            logger.warning(
-                "JWT blocklist: Redis unavailable (%s) — skipping revocation check", exc
-            )
-            return False
+        return is_jti_blocklisted(jwt_payload.get("jti"))
 
     # Database query monitoring
     from sqlalchemy import event
