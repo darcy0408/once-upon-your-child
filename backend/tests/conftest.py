@@ -8,6 +8,11 @@ import pytest
 # Ensure backend path is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+# An unset FLASK_ENV means production (MT-455), and importing the config in
+# production without real secrets fails by design. A test run that did not
+# choose an environment is a test environment.
+os.environ.setdefault("FLASK_ENV", "testing")
+
 from backend.app import create_app
 from backend.database import db
 
@@ -150,6 +155,7 @@ def auth_token(test_user):
     payload = {
         "user_id": test_user.id,
         "sub": test_user.id,
+        "type": "access",
         "email": test_user.email,
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }
@@ -194,6 +200,7 @@ def free_user_headers(free_user):
     payload = {
         "user_id": free_user.id,
         "sub": free_user.id,
+        "type": "access",
         "email": free_user.email,
         "subscription_tier": "free",
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
@@ -234,6 +241,7 @@ def premium_user_headers(premium_user):
     payload = {
         "user_id": premium_user.id,
         "sub": premium_user.id,
+        "type": "access",
         "email": premium_user.email,
         "subscription_tier": "premium",
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
@@ -440,6 +448,7 @@ def admin_token(admin_user):
     payload = {
         "user_id": admin_user.id,
         "sub": admin_user.id,
+        "type": "access",
         "email": admin_user.email,
         "role": "admin",
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
@@ -457,6 +466,7 @@ def admin_headers(admin_user):
     payload = {
         "user_id": admin_user.id,
         "sub": admin_user.id,
+        "type": "access",
         "email": admin_user.email,
         "role": "admin",
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),

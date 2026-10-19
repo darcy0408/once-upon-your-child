@@ -6,6 +6,7 @@ import pytest
 
 from backend.utils.safe_fetch import (
     UnsafeURLError,
+    _PinnedHostAdapter,
     assert_public_url,
     safe_get,
     safe_get_bytes,
@@ -88,18 +89,17 @@ def _response(is_redirect=False, location=None, chunks=(b"img",), length=None):
 
 def test_redirect_to_internal_host_is_refused_before_it_is_fetched():
     hosts = {"images.example": [PUBLIC], "internal.example": ["10.0.0.5"]}
-    with patch("backend.utils.safe_fetch.requests.get") as mock_get:
+    with patch("backend.utils.safe_fetch._send") as mock_get:
         mock_get.return_value = _response(
             is_redirect=True, location="https://internal.example/secret"
         )
         with pytest.raises(UnsafeURLError):
             safe_get("https://images.example/x.png", resolve=lambda h: hosts[h])
         assert mock_get.call_count == 1
-        assert mock_get.call_args.kwargs["allow_redirects"] is False
 
 
 def test_redirect_loop_is_bounded():
-    with patch("backend.utils.safe_fetch.requests.get") as mock_get:
+    with patch("backend.utils.safe_fetch._send") as mock_get:
         mock_get.return_value = _response(
             is_redirect=True, location="https://images.example/again"
         )
@@ -109,7 +109,7 @@ def test_redirect_loop_is_bounded():
 
 def test_size_cap_is_enforced_while_streaming():
     with patch("backend.utils.safe_fetch._resolve", _resolver(PUBLIC)), patch(
-        "backend.utils.safe_fetch.requests.get"
+        "backend.utils.safe_fetch._send"
     ) as mock_get:
         mock_get.return_value = _response(chunks=[b"x" * 60, b"x" * 60])
         with pytest.raises(ValueError, match="size limit"):
@@ -125,7 +125,7 @@ def test_openrouter_generator_refuses_an_internal_avatar_url():
 
     generator = OpenRouterImageGenerator(api_key="test-key")
     with patch("backend.utils.safe_fetch._resolve", _resolver("10.0.0.5")), patch(
-        "backend.utils.safe_fetch.requests.get"
+        "backend.utils.safe_fetch._send"
     ) as mock_get:
         assert (
             generator._normalize_image_to_base64("https://internal.example/x") is None
@@ -133,7 +133,65 @@ def test_openrouter_generator_refuses_an_internal_avatar_url():
         mock_get.assert_not_called()
 
     with patch("backend.utils.safe_fetch._resolve", _resolver(PUBLIC)), patch(
-        "backend.utils.safe_fetch.requests.get"
+        "backend.utils.safe_fetch._send"
     ) as mock_get:
         mock_get.return_value = _response(chunks=[b"img"])
         assert generator._normalize_image_to_base64("https://cdn.example/x") == "aW1n"
+
+
+def test_assert_public_url_returns_the_validated_addresses():
+    assert assert_public_url(
+        "https://images.example/x.png", resolve=_resolver(PUBLIC, "93.184.216.35")
+    ) == [PUBLIC, "93.184.216.35"]
+
+
+def test_transport_connects_to_the_validated_ip_with_the_original_host():
+    with patch("backend.utils.safe_fetch._send") as mock_send:
+        mock_send.return_value = _response()
+        safe_get("https://images.example/a/x.png?v=1#frag", resolve=_resolver(PUBLIC))
+    args = mock_send.call_args.args
+    assert args[0] == f"https://{PUBLIC}/a/x.png?v=1"
+    assert args[1] == {"Host": "images.example"}
+    assert args[2] == "images.example"
+
+
+def test_ipv6_validated_address_is_bracketed_in_the_url():
+    with patch("backend.utils.safe_fetch._send") as mock_send:
+        mock_send.return_value = _response()
+        safe_get(
+            "https://images.example/x.png",
+            resolve=_resolver("2606:4700:4700::1111"),
+        )
+    assert mock_send.call_args.args[0] == "https://[2606:4700:4700::1111]/x.png"
+    assert mock_send.call_args.args[1] == {"Host": "images.example"}
+
+
+def test_explicit_port_survives_in_url_and_host_header():
+    with patch("backend.utils.safe_fetch._send") as mock_send:
+        mock_send.return_value = _response()
+        safe_get("https://images.example:8443/x.png", resolve=_resolver(PUBLIC))
+    assert mock_send.call_args.args[0] == f"https://{PUBLIC}:8443/x.png"
+    assert mock_send.call_args.args[1] == {"Host": "images.example:8443"}
+
+
+def test_adapter_verifies_tls_against_the_original_hostname():
+    adapter = _PinnedHostAdapter("images.example")
+    adapter.init_poolmanager(1, 1)
+    kw = adapter.poolmanager.connection_pool_kw
+    assert kw["server_hostname"] == "images.example"
+    assert kw["assert_hostname"] == "images.example"
+
+
+def test_each_redirect_hop_is_pinned_to_its_own_validated_ip():
+    hosts = {"images.example": [PUBLIC], "cdn.example": ["93.184.216.99"]}
+    with patch("backend.utils.safe_fetch._send") as mock_send:
+        mock_send.side_effect = [
+            _response(is_redirect=True, location="https://cdn.example/real.png"),
+            _response(),
+        ]
+        safe_get("https://images.example/x.png", resolve=lambda h: hosts[h])
+    first, second = (call.args for call in mock_send.call_args_list)
+    assert first[0] == f"https://{PUBLIC}/x.png"
+    assert second[0] == "https://93.184.216.99/real.png"
+    assert second[1] == {"Host": "cdn.example"}
+    assert second[2] == "cdn.example"

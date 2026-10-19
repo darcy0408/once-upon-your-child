@@ -140,6 +140,7 @@ def _ensure_audit_user(app) -> dict[str, str]:
         {
             "user_id": "story-load-audit-user",
             "sub": "story-load-audit-user",
+            "type": "access",
             "email": "story-load-audit@example.com",
             "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
         },

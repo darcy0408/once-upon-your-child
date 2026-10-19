@@ -197,7 +197,7 @@ def _resolve_story_provider() -> str:
 
             in_production = is_production()
         except Exception:
-            in_production = os.environ.get("RAILWAY_ENVIRONMENT") == "production"
+            in_production = True  # can't tell — warn rather than stay silent
         if in_production:
             logger.warning(
                 "STORY_GEN_PROVIDER=%r in PRODUCTION: children's story text is being "
@@ -2234,6 +2234,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     mood_physics=kwargs.get("mood_physics"),  # NEW
                     conflict_hook=kwargs.get("conflict_hook"),  # NEW
                     sensory_palette=kwargs.get("sensory_palette"),  # NEW
+                    world_bible=kwargs.get("world_bible", ""),  # MT-465
                     custom_elements=custom_elements,  # NEW: Free-form custom story requests
                     additional_characters=kwargs.get("additional_characters")
                     or char_details.get("additionalCharacters"),

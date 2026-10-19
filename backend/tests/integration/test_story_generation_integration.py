@@ -139,6 +139,7 @@ def _create_auth_headers_for_user(app, user_id):
     payload = {
         "user_id": user_id,
         "sub": user_id,
+        "type": "access",
         "email": f"{user_id}@example.com",
         "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
     }

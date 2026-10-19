@@ -25,6 +25,7 @@ def _auth_headers(user_id: str) -> dict[str, str]:
         {
             "user_id": user_id,
             "sub": user_id,
+            "type": "access",
             "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
         },
         "dev-secret-key",
@@ -485,6 +486,7 @@ def test_get_subscription_status_rejects_expired_token(client, app):
     expired_token = jwt.encode(
         {
             "user_id": "stripe-user-expired-token",
+            "type": "access",
             "exp": int((datetime.now(timezone.utc) - timedelta(hours=1)).timestamp()),
         },
         "dev-secret-key",
