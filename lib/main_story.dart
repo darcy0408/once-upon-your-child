@@ -24,7 +24,6 @@ import 'providers/hero_profile_provider.dart';
 
 import 'achievements_screen.dart' deferred as achievements_screen;
 import 'coloring_book_library_screen.dart';
-import 'dialogs/upgrade_prompt_dialog.dart';
 import 'saved_stories_screen.dart';
 import 'story_result_screen.dart';
 import 'screens/chronicles_list_screen.dart';
@@ -42,8 +41,6 @@ import 'premium_upgrade_screen.dart';
 import 'screens/subscription_success_screen.dart';
 import 'services/achievement_service.dart';
 import 'services/api_service_manager.dart';
-import 'services/grace_period_service.dart';
-import 'services/grace_period_analytics.dart';
 import 'subscription_models.dart';
 import 'services/subscription_service.dart';
 import 'services/usage_stats_service.dart';
@@ -333,7 +330,6 @@ class _StoryScreenState extends State<StoryScreen> {
   AchievementSummary? _achievementSummary;
   // Set from the backend's usage-stats count, never from a local counter.
   bool _monthlyLimitReached = false;
-  bool _loggedGraceBanner = false;
 
   final int _currentPhase = 0;
   final int _totalPhases = 3;
@@ -851,46 +847,6 @@ class _StoryScreenState extends State<StoryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  FutureBuilder<GracePeriodStatus>(
-                    future: GracePeriodService.getStatus(
-                        _currentSubscription?.tier.name ?? 'free'),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data!.isInGracePeriod) {
-                        if (!_loggedGraceBanner) {
-                          _loggedGraceBanner = true;
-                          GracePeriodAnalytics.bannerViewed(
-                            daysRemaining:
-                                snapshot.data!.daysRemainingInGracePeriod,
-                          );
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: GracePeriodBanner(
-                            daysRemaining:
-                                snapshot.data!.daysRemainingInGracePeriod,
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (dialogContext) => AlertDialog(
-                                  title: const Text('Grace Period'),
-                                  content:
-                                      Text(snapshot.data!.usageDescription),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(dialogContext).pop(),
-                                      child: const Text('Got it'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
                   if (_achievementSummary != null) ...[
                     _buildAchievementsOverviewCard(),
                     const SizedBox(height: 20),
