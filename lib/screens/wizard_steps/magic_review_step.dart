@@ -18,6 +18,7 @@ import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/config/feature_flags.dart';
 import 'package:story_weaver_app/models/api_error.dart';
+import 'package:story_weaver_app/utils/character_limit_handler.dart';
 import 'package:story_weaver_app/models/story_generation_result.dart'
     show StoryGenerationCancelled;
 import 'package:story_weaver_app/screens/wizard_story_screen.dart';
@@ -405,7 +406,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     await Future<void>.delayed(const Duration(milliseconds: 80));
     if (!mounted) return;
     try {
-      await _saveCharacterIfNeeded();
+      if (!await _saveCharacterIfNeeded()) {
+        // Tier character cap hit: dialog shown, stay on this step.
+        if (mounted) setState(() => _isGenerating = false);
+        return;
+      }
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
       // PERF-01: remember the length tier so streamed-char progress can be
       // scaled correctly for short vs. epic stories.
@@ -1254,7 +1259,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     return companions;
   }
 
-  Future<void> _saveCharacterIfNeeded() async {
+  /// Returns false only when the backend refused the character because the
+  /// user is at their tier cap (dialog already shown); true otherwise.
+  Future<bool> _saveCharacterIfNeeded() async {
     try {
       final characterDetails = WizardDataMapper.mapToStoryRequest(
           widget.wizardData)['characterDetails'] as Map<String, dynamic>;
@@ -1286,7 +1293,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       }
     } catch (e) {
       debugPrint('⚠️ Character save failed: $e');
+      if (mounted && await showCharacterLimitIfReached(context, e)) {
+        return false;
+      }
     }
+    return true;
   }
 
   String _mapStoryLength(String wizardLength) => wizardLength == 'quick'

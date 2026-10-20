@@ -42,6 +42,7 @@ import '../../widgets/hero_creator/pet_card.dart';
 import '../../widgets/hero_creator/hero_input_widgets.dart';
 import '../../widgets/hero_creator/hero_effects.dart';
 import '../../widgets/safe_asset_image.dart';
+import '../../utils/character_limit_handler.dart';
 import '../../utils/paywall_gate.dart';
 import '../../premium_upgrade_screen.dart';
 import '../../services/parental_consent_service.dart';
@@ -1137,6 +1138,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       caughtError = e;
       isLocalBackendDown =
           e.toString().contains('Cannot reach the local backend');
+    }
+    // Tier character cap: show the upgrade dialog, don't mirror an unsynced
+    // character locally, and stay on this step so the user can go back.
+    if (caughtError != null &&
+        mounted &&
+        await showCharacterLimitIfReached(context, caughtError)) {
+      return false;
     }
     // Mirror to local Isar so a backend outage doesn't lose the character.
     await _persistLocalCharacter(synced: backendOk);

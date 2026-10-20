@@ -255,7 +255,9 @@ class PaywallDialog {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'You\'ve got $maxCharacters character${maxCharacters == 1 ? '' : 's'} — that\'s your free spot! Does your child have a brother, sister, or best friend who wants their own story too?',
+              maxCharacters == 1
+                  ? 'You\'ve got 1 character — that\'s your free spot! Does your child have a brother, sister, or best friend who wants their own story too?'
+                  : 'You\'ve reached your limit of $maxCharacters characters. Does someone else want their own story too?',
               style: const TextStyle(fontSize: 15),
             ),
             const SizedBox(height: 16),

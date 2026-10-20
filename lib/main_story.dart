@@ -326,7 +326,6 @@ class _StoryScreenState extends State<StoryScreen> {
 
   final _subscriptionService = SubscriptionService();
   UserSubscription? _currentSubscription;
-  int _remainingStoriesToday = 0;
 
   final bool _magicPulse = false;
   final _achievementService = AchievementService();
@@ -463,13 +462,11 @@ class _StoryScreenState extends State<StoryScreen> {
 
   Future<void> _loadSubscriptionInfo() async {
     final subscription = await _subscriptionService.getSubscription();
-    final remaining = await _subscriptionService.getRemainingStoriesToday();
 
     if (!mounted) return;
 
     setState(() {
       _currentSubscription = subscription;
-      _remainingStoriesToday = remaining;
     });
     unawaited(_refreshMonthlyLimit());
   }
@@ -661,32 +658,6 @@ class _StoryScreenState extends State<StoryScreen> {
           ],
         ),
         actions: [
-          // Stories remaining indicator
-          if (_currentSubscription != null &&
-              !_currentSubscription!.limits.unlimitedStories)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Center(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.auto_stories, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$_remainingStoriesToday left today',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           // Premium button for free users
           if (_currentSubscription != null && _currentSubscription!.isFree)
             IconButton(

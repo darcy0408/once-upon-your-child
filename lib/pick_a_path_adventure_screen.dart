@@ -13,7 +13,6 @@ import 'services/chronicle_service.dart';
 import 'services/isar_service.dart';
 import 'services/logger_service.dart';
 import 'services/offline_story_service.dart';
-import 'services/subscription_service.dart';
 import 'theme/age_band_theme.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
 import 'widgets/app_card.dart';
@@ -91,7 +90,6 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   final ScrollController _scrollController = ScrollController();
   final InteractiveStoryService _storyService = const InteractiveStoryService();
   final StorageService _storageService = StorageService();
-  final SubscriptionService _subscriptionService = SubscriptionService();
 
   String? _storyId;
   String? _storyTitle;
@@ -879,7 +877,6 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       );
 
       await _storageService.saveStory(savedStory);
-      await _subscriptionService.recordStoryCreation();
 
       if (!mounted) return;
       setState(() {
