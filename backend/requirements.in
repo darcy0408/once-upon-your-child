@@ -7,7 +7,7 @@ python-dotenv==1.2.2
 
 # Database
 SQLAlchemy==2.0.52
-psycopg2-binary==2.9.12
+psycopg2-binary==2.9.13
 
 # Google AI (Gemini)
 google-genai==2.14.0
