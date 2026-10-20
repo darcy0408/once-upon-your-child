@@ -150,6 +150,25 @@ def _get_monthly_limit(tier: str) -> int | None:
     return None if val <= 0 else val
 
 
+# MT-474: hero-character cap per tier. It lives beside the story limits so the
+# usage-stats read-out and the /create-character gate share one table and can't
+# drift apart again (they disagreed for every tier before this). The numbers
+# are the ones the paywall copy has always promised. 0 = unlimited.
+_CHARACTER_LIMITS = {
+    "free": 1,
+    "premium": 6,
+    "family": 20,
+}
+
+
+def get_character_limit(tier: str) -> int | None:
+    """Return the hero-character cap for *tier*, or None if unlimited."""
+    if tier in _BYOK_TIERS:
+        return None
+    val = _CHARACTER_LIMITS.get(tier, _CHARACTER_LIMITS["free"])
+    return None if val <= 0 else val
+
+
 def _redis_key(user_id: str) -> str:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     return f"ai:quota:{user_id}:{today}"
@@ -242,6 +261,16 @@ def _db_story_count(user_id: str) -> int | None:
     except Exception:
         db.session.rollback()
     return int(getattr(user, "stories_generated_this_month", 0) or 0)
+
+
+def get_monthly_story_count(user_id: str) -> int:
+    """Public read-out of the enforced monthly story counter (MT-474).
+
+    This is the same DB counter the cost breaker falls back to, rolled over on
+    the same schedule, so what the app shows is what the quota actually counts.
+    Returns 0 when the user or the DB is unavailable.
+    """
+    return _db_story_count(user_id) or 0
 
 
 def _daily_quota_db_fallback(

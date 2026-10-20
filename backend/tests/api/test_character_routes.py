@@ -1,5 +1,7 @@
 import uuid
 
+import pytest
+
 from backend.database import db
 from backend.models.character import Character
 from backend.models.user import User
@@ -85,6 +87,82 @@ def test_create_character_invalid_age_returns_400(client, auth_headers, test_use
 
     assert response.status_code == 400
     assert response.get_json()["error"] == "Age must be between 0 and 120."
+
+
+def _fill_characters(user_id: str, n: int) -> None:
+    for i in range(n):
+        db.session.add(
+            Character(
+                id=str(uuid.uuid4()),
+                user_id=user_id,
+                name=f"Hero {i}",
+                age=7,
+                gender="female",
+                role="hero",
+            )
+        )
+    db.session.commit()
+
+
+def _set_tier(user: User, tier: str) -> None:
+    # The test_user fixture keeps an app context (and so the scoped session)
+    # open for the whole test, and the request reuses it. Mutate the fixture's
+    # own object so the identity map agrees with the row.
+    user.subscription_tier = tier
+    db.session.commit()
+
+
+@pytest.mark.parametrize("tier,limit", [("free", 1), ("premium", 6), ("family", 20)])
+def test_create_character_refuses_at_tier_cap(
+    client, auth_headers, test_user, tier, limit
+):
+    """MT-474: the cap is enforced server-side, one hero short of the limit passes."""
+    _set_tier(test_user, tier)
+    _fill_characters(test_user.id, limit - 1)
+
+    # One below the cap: allowed.
+    response = client.post(
+        "/create-character", json={"name": "Last", "age": 7}, headers=auth_headers
+    )
+    assert response.status_code == 201
+
+    # At the cap: refused with a code the client can act on.
+    response = client.post(
+        "/create-character", json={"name": "Extra", "age": 7}, headers=auth_headers
+    )
+    assert response.status_code == 403
+    body = response.get_json()
+    assert body["code"] == "CHARACTER_LIMIT_REACHED"
+    assert body["characters_count"] == limit
+    assert body["characters_limit"] == limit
+    assert body["tier"] == tier
+
+    with client.application.app_context():
+        assert Character.query.filter_by(user_id=test_user.id).count() == limit
+
+
+def test_create_character_cap_counts_only_own_characters(
+    client, auth_headers, test_user
+):
+    """Another account's heroes must not eat into this free user's single slot."""
+    other = _create_user("someone-else")
+    _fill_characters(other.id, 3)
+
+    response = client.post(
+        "/create-character", json={"name": "Mine", "age": 7}, headers=auth_headers
+    )
+    assert response.status_code == 201
+
+
+def test_create_character_unknown_tier_gets_free_cap(client, auth_headers, test_user):
+    _set_tier(test_user, "mystery")
+    _fill_characters(test_user.id, 1)
+
+    response = client.post(
+        "/create-character", json={"name": "Nope", "age": 7}, headers=auth_headers
+    )
+    assert response.status_code == 403
+    assert response.get_json()["characters_limit"] == 1
 
 
 def test_get_characters_returns_only_current_user_records(
