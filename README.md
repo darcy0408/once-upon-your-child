@@ -151,7 +151,6 @@ lib/
 │   ├── api_service_manager.dart             # All backend API routing
 │   ├── parental_consent_service.dart        # COPPA consent (local + backend sync)
 │   ├── child_profile_service.dart           # Profiles + backend deletion
-│   ├── grace_period_service.dart            # 3-day grace + monthly limit
 │   ├── audio_ambience_service.dart          # Ambient sound during reading
 │   └── app_tts_service.dart                 # ElevenLabs TTS narration
 ├── widgets/

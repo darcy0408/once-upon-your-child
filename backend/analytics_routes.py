@@ -159,14 +159,6 @@ def get_byok_user_count():
     return int(total_users * 0.1)
 
 
-def get_grace_period_user_count():
-    """Get count of users in grace period"""
-    # This would require grace period tracking
-    # Estimate 5% of free users
-    free_users = User.query.filter(User.subscription_tier == "free").count()
-    return int(free_users * 0.05)
-
-
 def get_premium_user_count():
     """Get count of premium users"""
     return User.query.filter(User.subscription_tier.in_(["premium", "family"])).count()
@@ -253,7 +245,6 @@ def create_analytics_blueprint(limiter=None):
                 "illustrations_generated": get_illustration_count(),
                 "coloring_pages_created": get_coloring_page_count(),
                 "byok_active_users": get_byok_user_count(),
-                "grace_period_users": get_grace_period_user_count(),
                 "premium_users": get_premium_user_count(),
                 "feature_unlock_progress": {
                     "character_creation_unlocked": User.query.filter(
