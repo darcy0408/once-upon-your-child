@@ -19,11 +19,16 @@ class ApiError implements Exception {
   /// route), so callers that need to tell those apart read this.
   final int? statusCode;
 
+  /// The full decoded error body, for endpoints that return extra fields
+  /// (e.g. `code`, `characters_limit`).
+  final Map<String, dynamic>? body;
+
   ApiError({
     required this.errorCode,
     required this.message,
     this.hint,
     this.statusCode,
+    this.body,
   });
 
   factory ApiError.fromJson(Map<String, dynamic> json, {int? statusCode}) => ApiError(
@@ -31,6 +36,7 @@ class ApiError implements Exception {
         message: (json['message'] ?? json['error'] ?? 'Something went wrong.').toString(),
         hint: json['hint']?.toString(),
         statusCode: statusCode,
+        body: json,
       );
 
   /// Returns true if this is a mode combination error (e.g., Pick-a-Path + Rhymes).
@@ -48,6 +54,17 @@ class ApiError implements Exception {
   /// Returns true if the backend rejected the request because the under-13
   /// user has not yet completed parental consent.
   bool get isParentalConsentError => errorCode == 'PARENTAL_CONSENT_REQUIRED';
+
+  /// True when POST /create-character was refused because the user is at
+  /// their tier's character cap (HTTP 403, `code: CHARACTER_LIMIT_REACHED`).
+  bool get isCharacterLimitReached =>
+      statusCode == 403 && body?['code'] == 'CHARACTER_LIMIT_REACHED';
+
+  /// The tier's character cap from a character-limit rejection, if present.
+  int? get charactersLimit {
+    final v = body?['characters_limit'];
+    return v is num ? v.toInt() : null;
+  }
 
   /// User-friendly display message (includes hint if available).
   String get displayMessage {
