@@ -62,11 +62,12 @@ Billing / compliance: `STRIPE_TRIAL_DAYS` (14), `COPPA_REQUIRE_VERIFIED_CONSENT`
 
 ## GitHub Actions secrets (CI + backups)
 
-Set in **Settings → Secrets and variables → Actions**. Used by
-`postgres-backup.yml` and the deploy/CI workflows:
+Set in **Settings → Secrets and variables → Actions**. Used by the deploy/CI
+workflows: `RAILWAY_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
 
-`DATABASE_PUBLIC_URL`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
-`R2_BUCKET`, `RAILWAY_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+Backups no longer run in GitHub Actions. The database and R2 variables live on
+the Railway cron services `pg-backup` and `pg-restore-drill`; the variable list
+is in the header of each script in `ops/pg-backup/`.
 
 > Note: this file documents variable **names and sources only** — never commit
 > actual values. Production values belong in Railway + the continuity vault.

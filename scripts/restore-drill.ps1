@@ -7,7 +7,8 @@
     RECOVERY.md §4 / continuity audit).
 
 .DESCRIPTION
-    Mirrors .github/workflows/postgres-backup.yml: dumps are named
+    Local, hands-on twin of ops/pg-backup/restore-drill.sh (the monthly
+    Railway drill). Dumps come from ops/pg-backup/backup.sh and are named
     story-weaver-pg-YYYY-MM-DD.sql.gz under postgres/ in the R2 bucket.
     Nothing here touches production — it restores into a disposable container.
 
