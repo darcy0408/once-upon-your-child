@@ -19,7 +19,7 @@ schedule), G-7 (direct-notice statements), G-8 (identifiers enumeration), G-10
 
 Every timeline below is the **verified current behavior of the code as of
 2026-07-07** (`backend/services/data_retention.py`, `backend/tasks/retention_tasks.py`,
-`.github/workflows/postgres-backup.yml`) — nothing here is aspirational. If an env
+`ops/pg-backup/backup.sh`) — nothing here is aspirational. If an env
 var override changes a window in prod, update the table before publishing.
 
 ---

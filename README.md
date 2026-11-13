@@ -370,7 +370,7 @@ flutter build web --release --dart-define=FLAVOR=production
 ```
 Merging to `main` *is* the deploy — no manual step. (Railway `grand-light` and Netlify are retired for the frontend.)
 
-CI/CD (`.github/workflows/`): `cicd.yml` (main pipeline — frontend tests/build + Cloudflare Pages deploy), `main_tests.yml`, `backend-tests.yml`, `backend-lint.yml`, `canary-deployment.yml`, `rollback.yml`, `prod-smoke.yml`, `postgres-backup.yml` (scheduled), `restore-drill.yml` (verifies a backup actually restores), `story-load-audit.yml`, `ios-build.yml`, `ios-testflight.yml`. Backend redeploys natively on Railway on push to `main`.
+CI/CD (`.github/workflows/`): `cicd.yml` (main pipeline — frontend tests/build + Cloudflare Pages deploy), `main_tests.yml`, `backend-tests.yml`, `backend-lint.yml`, `canary-deployment.yml`, `rollback.yml`, `prod-smoke.yml`, `story-load-audit.yml`, `ios-build.yml`, `ios-testflight.yml`. Backend redeploys natively on Railway on push to `main`. Database backups and the monthly restore drill run as Railway cron services built from `ops/pg-backup/`, not in GitHub Actions.
 
 ## Usage Limits & Costs
 
