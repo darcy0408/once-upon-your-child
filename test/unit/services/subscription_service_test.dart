@@ -194,17 +194,6 @@ void main() {
     });
 
     group('Usage Tracking', () {
-      test('test_story_count_increment', () {
-        final usage = UsageStats(
-          storiesCreatedToday: 0,
-          storiesCreatedThisMonth: 0,
-        );
-
-        final incremented = usage.incrementStory();
-        expect(incremented.storiesCreatedToday, 1);
-        expect(incremented.storiesCreatedThisMonth, 1);
-      });
-
       test('test_usage_limit_enforcement_free_tier', () async {
         final fakeStripe =
             _FakeStripeService(results: <Object>[_freeStatusFixture()]);

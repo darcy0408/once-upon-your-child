@@ -79,16 +79,21 @@ def _create_character(user_id):
     return character.id
 
 
+def _next_month_start():
+    now = datetime.now(UTC)
+    return (now.replace(day=1) + timedelta(days=32)).replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0, tzinfo=None
+    )
+
+
 def test_get_usage_stats_success(client, setup_data):
     with client.application.app_context():
-        user_id = _create_user(subscription_tier="premium")
-        # Create 45 stories this month (all within current month)
-        now = datetime.now(UTC)
-        period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        for i in range(45):
-            # Create stories with timezone-aware datetime matching route expectations
-            story_time = period_start + timedelta(hours=i)
-            _create_story(user_id, created_at=story_time.replace(tzinfo=None))
+        # 45 generations this month, per the counter ai_quota enforces.
+        user_id = _create_user(
+            subscription_tier="premium",
+            stories_generated_this_month=45,
+            usage_reset_date=_next_month_start(),
+        )
         # Create 3 characters
         for _ in range(3):
             _create_character(user_id)
@@ -101,9 +106,62 @@ def test_get_usage_stats_success(client, setup_data):
     assert data["stories_this_month"] == 45
     assert data["stories_limit"] == 150
     assert data["characters_count"] == 3
-    assert data["characters_limit"] == 5
+    assert data["characters_limit"] == 6
     assert "period_start" in data
     assert "period_end" in data
+
+
+def test_usage_stats_counts_generations_not_saved_rows(client, setup_data):
+    """MT-474: the read-out is the enforced counter, not a count of Story rows.
+
+    A story that was generated but never saved still spent quota; a saved
+    row that was imported or restored did not. Only the counter is truthful.
+    """
+    with client.application.app_context():
+        user_id = _create_user(
+            subscription_tier="free",
+            stories_generated_this_month=2,
+            usage_reset_date=_next_month_start(),
+        )
+        for _ in range(4):
+            _create_story(user_id)
+
+    headers = _auth_headers(client.application, user_id)
+    response = client.get(f"/api/user/{user_id}/usage-stats", headers=headers)
+    assert response.status_code == 200
+    assert response.get_json()["stories_this_month"] == 2
+
+
+def test_usage_stats_period_is_the_calendar_month(client, setup_data):
+    """The window shown is the one the counter rolls over on, not the Stripe period."""
+    with client.application.app_context():
+        user_id = _create_user(
+            subscription_tier="premium",
+            current_period_end=datetime.now(UTC) + timedelta(days=17),
+        )
+
+    headers = _auth_headers(client.application, user_id)
+    data = client.get(f"/api/user/{user_id}/usage-stats", headers=headers).get_json()
+    now = datetime.now(UTC)
+    assert data["period_start"] == now.strftime("%Y-%m-01T00:00:00Z")
+    assert data["period_end"] == _next_month_start().strftime("%Y-%m-%dT00:00:00Z")
+
+
+@pytest.mark.parametrize(
+    "tier,expected_limit",
+    [("free", 1), ("premium", 6), ("family", 20)],
+)
+def test_usage_stats_character_limit_matches_enforced_cap(
+    client, setup_data, tier, expected_limit
+):
+    """MT-474: one table for the cap — the read-out and /create-character agree."""
+    with client.application.app_context():
+        user_id = _create_user(subscription_tier=tier)
+
+    headers = _auth_headers(client.application, user_id)
+    response = client.get(f"/api/user/{user_id}/usage-stats", headers=headers)
+    assert response.status_code == 200
+    assert response.get_json()["characters_limit"] == expected_limit
 
 
 @pytest.mark.parametrize(

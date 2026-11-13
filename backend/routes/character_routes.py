@@ -7,6 +7,7 @@ from ..middleware.auth import require_auth, require_parental_consent
 from ..models.character import Character
 from ..models.parent_hidden_context import ParentHiddenContext
 from ..services import character_service
+from ..utils.ai_quota import get_character_limit
 from ..utils.sanitizer import sanitize_for_prompt
 
 # ── Allowlists ──────────────────────────────────────────────────────────────
@@ -153,6 +154,36 @@ def create_character_blueprint(limiter, logger):
         data = request.get_json(silent=True) or {}
         # Enforce user ownership
         data["user_id"] = request.current_user.id
+
+        # MT-474: the tier's hero cap is enforced here, not on the client. The
+        # client only ever displayed a number (and a different one per screen);
+        # nothing stopped an account from creating fifty heroes.
+        tier = request.current_user.subscription_tier or "free"
+        limit = get_character_limit(tier)
+        if limit is not None:
+            count = Character.query.filter(
+                Character.user_id == request.current_user.id
+            ).count()
+            if count >= limit:
+                logger.info(
+                    "create-character refused: user=%s tier=%s count=%d limit=%d",
+                    request.current_user.id,
+                    tier,
+                    count,
+                    limit,
+                )
+                return (
+                    jsonify(
+                        {
+                            "error": "Character limit reached",
+                            "code": "CHARACTER_LIMIT_REACHED",
+                            "characters_count": count,
+                            "characters_limit": limit,
+                            "tier": tier,
+                        }
+                    ),
+                    403,
+                )
 
         response, status_code = character_service.create_character(data)
         logger.info(f"Character creation result: {status_code}")

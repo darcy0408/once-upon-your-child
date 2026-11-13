@@ -14,7 +14,11 @@ from backend.models.consent_record import (
     ConsentVerificationCode,
 )
 from backend.models.story import Story
-from backend.utils.ai_quota import _get_monthly_limit
+from backend.utils.ai_quota import (
+    _get_monthly_limit,
+    get_character_limit,
+    get_monthly_story_count,
+)
 from backend.utils.app_helpers import is_production
 from backend.utils.audit import audit_log
 from backend.utils.email_service import (
@@ -59,48 +63,19 @@ def _hash_consent_code(code):
     return hashlib.sha256(code.encode("utf-8")).hexdigest()
 
 
-# Character limits per tier. Story limits are deliberately not listed here:
-# usage-stats reports the monthly cap from backend/utils/ai_quota.py, the
-# module that enforces it, so the read-out can't drift from the real limit.
-SUBSCRIPTION_LIMITS = {
-    "free": {"characters": 2},
-    "premium": {"characters": 5},
-    "family": {"characters": 10},
-}
+# No limits are defined in this module on purpose (MT-474): usage-stats reports
+# the caps and the counts from backend/utils/ai_quota.py, the module that
+# enforces them, so the read-out can't drift from what the quota actually does.
 
 
 def _get_period_start_end():
+    """The calendar month: the window ai_quota's monthly counter rolls over on."""
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     if now.month == 12:
         period_end = period_start.replace(year=now.year + 1, month=1)
     else:
         period_end = period_start.replace(month=now.month + 1)
-    return period_start, period_end
-
-
-def _normalize_timestamp(value):
-    if not value:
-        return None
-    if value.tzinfo:
-        return value.astimezone(timezone.utc).replace(tzinfo=None)
-    return value
-
-
-def _get_period_bounds_for_user(user):
-    default_start, default_end = _get_period_start_end()
-    if not user.current_period_end:
-        return default_start, default_end
-    period_end = _normalize_timestamp(user.current_period_end)
-    current_month_start = period_end.replace(
-        day=1, hour=0, minute=0, second=0, microsecond=0
-    )
-    if current_month_start.month == 1:
-        period_start = current_month_start.replace(
-            year=current_month_start.year - 1, month=12
-        )
-    else:
-        period_start = current_month_start.replace(month=current_month_start.month - 1)
     return period_start, period_end
 
 
@@ -123,30 +98,27 @@ def create_user_routes_blueprint(limiter=None):
             # User already validated by @require_owner decorator
             user = request.current_user
 
-            period_start, period_end = _get_period_bounds_for_user(user)
+            # The enforced monthly counter resets on the 1st, whatever the
+            # Stripe billing period says, so the window shown matches it.
+            period_start, period_end = _get_period_start_end()
 
-            # Count stories this month
-            stories_this_month = Story.query.filter(
-                Story.user_id == user_id,
-                Story.created_at >= period_start,
-                Story.created_at < period_end,
-            ).count()
+            # Stories: the counter the quota enforces, not a count of saved
+            # rows (a generated-but-unsaved story still spent the quota).
+            stories_this_month = get_monthly_story_count(user_id)
 
-            # Count characters
+            # Characters: the same count /create-character gates on.
             characters_count = Character.query.filter(
                 Character.user_id == user_id
             ).count()
 
-            # Get limits
             tier = user.subscription_tier or "free"
-            limits = SUBSCRIPTION_LIMITS.get(tier, SUBSCRIPTION_LIMITS["free"])
 
             response = {
                 "stories_this_month": stories_this_month,
                 # 0 = unlimited, the same convention the client's TierLimits uses.
                 "stories_limit": _get_monthly_limit(tier) or 0,
                 "characters_count": characters_count,
-                "characters_limit": limits["characters"],
+                "characters_limit": get_character_limit(tier) or 0,
                 "period_start": _format_timestamp(period_start),
                 "period_end": _format_timestamp(period_end),
             }
