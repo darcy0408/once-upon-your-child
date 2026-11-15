@@ -138,11 +138,13 @@ These are the env vars the app needs. Names below are the exact keys
 
 ## 4. Backup & restore drill (do once, record the RTO)
 
-- **Backup:** `postgres-backup.yml` dumps Postgres → Cloudflare R2 daily 09:00
-  UTC (RPO ≤ 24h). Confirmed uploading ~31 MB dumps (MT-220). There is **no
-  failure alert** — until one exists, eyeball the GitHub Actions "Postgres
-  Backup" run list every few days.
-- **Restore (untested — prove it):** run **`scripts/restore-drill.ps1`** — it
+- **Backup:** the Railway cron service `pg-backup` (`ops/pg-backup/backup.sh`)
+  dumps Postgres → Cloudflare R2 daily 09:00 UTC (RPO ≤ 24h) over Railway's
+  private network. A failed run emails `security@` via Resend.
+- **Restore drill:** the Railway cron service `pg-restore-drill`
+  (`ops/pg-backup/restore-drill.sh`) restores the newest dump into a throwaway
+  Postgres once a month and emails the result, pass or fail, with the measured
+  restore time. For a hands-on drill, run **`scripts/restore-drill.ps1`** — it
   downloads the latest dump, restores into a throwaway Docker Postgres, checks
   row counts, and prints the measured RTO. Or manually:
   1. Download the latest `postgres/story-weaver-pg-YYYY-MM-DD.sql.gz` from R2.

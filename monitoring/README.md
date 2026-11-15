@@ -25,16 +25,18 @@ frontend on Cloudflare Pages. Observability consists of:
   when the daily data-retention purge heartbeat goes stale. It runs on the
   same worker it monitors, so a fully wedged worker delays it; the module
   docstring spells this out.
-- **Database backups** - `.github/workflows/postgres-backup.yml` is present
-  here as a manual-dispatch workflow only; its schedule is disabled in this
-  repo. The daily run (09:00 UTC: `pg_dump`, gzip, upload to Cloudflare R2,
-  archive verified before upload, dumps older than 30 days pruned, GitHub
-  issue opened on failure) happens from a private ops repo that holds the
-  database and R2 secrets.
-- **Restore drill** - `.github/workflows/restore-drill.yml`, likewise
-  manual-dispatch only here. The monthly drill (latest dump restored into a
-  throwaway Postgres container, table and row counts checked, measured RTO
-  printed, issue opened on failure) runs from the same private ops repo.
+- **Database backups** - `ops/pg-backup/backup.sh`, run by the Railway cron
+  service `pg-backup` daily at 09:00 UTC over Railway's private network (the
+  database has no public entry point): `pg_dump`, gzip, archive verified before
+  upload to Cloudflare R2, dumps older than 30 days pruned only after a
+  successful upload, email via Resend on failure.
+- **Restore drill** - `ops/pg-backup/restore-drill.sh`, run by the Railway
+  cron service `pg-restore-drill` monthly with a read-only R2 token: newest
+  dump restored into a throwaway Postgres inside the container, fails if that
+  dump is more than 2 days old or the `user` table comes back missing or
+  empty, emails the result either way. Both services are built from
+  `ops/pg-backup/` and are not connected to GitHub, so script changes need
+  `railway up ops/pg-backup --path-as-root` for each service.
 - **Railway** provides service logs and CPU/memory graphs in its dashboard.
   Alert rules live there, not in this repo. The intended rules are written
   up in `docs/RAILWAY_ALERTS_SETUP.md`; they cannot be verified from the repo.
