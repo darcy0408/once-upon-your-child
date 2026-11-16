@@ -1668,6 +1668,57 @@ class TestRealLifeEcho:
         assert "change size" not in block
         assert "body clue immediately" in block
 
+    # ---- problem stories (MT-482) ----------------------------------------
+
+    def test_problem_story_real_setting_by_age(self):
+        from backend.services.story_service import build_problem_story_prompt_text
+
+        young = build_problem_story_prompt_text("nobody plays with me", age=4)
+        mid = build_problem_story_prompt_text(
+            "nobody likes me", age=7, theme="Big Feelings Quest"
+        )
+        older = build_problem_story_prompt_text("im weird", age=11, theme="")
+        assert "preschool" in young
+        assert "lunch table" in mid
+        assert "middle school" in older
+        for text in (young, mid, older):
+            assert "somewhere real" in text
+            assert "adventure the child chose" not in text
+
+    def test_problem_story_keeps_chosen_adventure(self):
+        from backend.services.story_service import build_problem_story_prompt_text
+
+        text = build_problem_story_prompt_text(
+            "im weird", age=10, theme="Dragon Mountain Quest"
+        )
+        assert 'keep the "Dragon Mountain Quest" adventure' in text
+        assert "somewhere real" not in text
+
+    def test_problem_story_rules_avoid_worksheet_words(self):
+        """The model copies rule nouns into the story, so the rules must not
+        contain the words a therapy worksheet would."""
+        from backend.services.story_service import build_problem_story_prompt_text
+
+        text = build_problem_story_prompt_text("nobody likes me", age=8).lower()
+        for word in ("lesson", "moral", "coping", "strategy", "therap", "skill"):
+            assert word not in text, word
+
+    def test_problem_story_skips_feeling_first_bullets(self):
+        from backend.services.story_service import (
+            _build_feelings_instruction,
+            build_problem_story_prompt_text,
+        )
+
+        block = _build_feelings_instruction(
+            build_problem_story_prompt_text("nobody likes me", age=7),
+            age=7,
+            theme="Big Feelings Quest",
+            character="Maya",
+        )
+        assert "nobody likes me" in block
+        assert "Open by naming the feeling" not in block
+        assert "FEELINGS-FIRST GUIDANCE" not in block
+
     # ---- meta-leak safety net (§4e) --------------------------------------
 
     def test_new_craft_terms_in_leak_list(self):
