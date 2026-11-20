@@ -241,6 +241,51 @@ class TestGenerateStory:
         assert data.get("crisis") is True
         mock_story_generation.apply_async.assert_not_called()
 
+    def test_generate_story_crisis_in_child_problem_blocks_generation(
+        self, client, auth_headers, mock_story_generation
+    ):
+        """MT-482: the "what's bothering you" box is child-typed free text, so
+        it goes through the same guard as the other free-text fields."""
+        payload = {
+            "character": "Maya",
+            "age": 9,
+            "child_problem": "nobody likes me and I want to kill myself",
+        }
+
+        response = client.post(
+            "/generate-story",
+            json=payload,
+            content_type="application/json",
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data.get("crisis") is True
+        mock_story_generation.apply_async.assert_not_called()
+
+    def test_child_problem_replaces_feelings_setup(self, app):
+        """MT-482: a typed problem builds the problem-story block, not the
+        BIG FEELINGS setup, even when a feeling was also picked."""
+        from backend.routes.story_routes import _build_feelings_prompt_text
+        from backend.services.story_service import PROBLEM_STORY_HEADER
+
+        with app.app_context():
+            text = _build_feelings_prompt_text(
+                {
+                    "age": 7,
+                    "theme": "Space Adventure",
+                    "child_problem": "nobody likes me",
+                    "current_feeling": {"emotion_name": "Sad"},
+                }
+            )
+
+        assert text.startswith(PROBLEM_STORY_HEADER)
+        assert '"nobody likes me"' in text
+        assert "BIG FEELINGS STORY SETUP" not in text
+        assert 'keep the "Space Adventure" adventure' in text
+        assert "The feeling they picked: Sad" in text
+
     def test_generate_story_with_feelings(self, client, auth_headers):
         """Test story generation with current feeling"""
         payload = {

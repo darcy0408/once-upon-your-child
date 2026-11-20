@@ -23,7 +23,10 @@ from ..services.interactive_adventure_service import (
     InteractiveAdventureService,
     schedule_segment_illustration,
 )
-from ..services.story_service import transform_parent_context_to_story_guidance
+from ..services.story_service import (
+    build_problem_story_prompt_text,
+    transform_parent_context_to_story_guidance,
+)
 from ..tasks.story_tasks import (
     AntiheroGenerationError,
     generate_story_task,
@@ -262,6 +265,18 @@ def _build_feelings_prompt_text(
     current_feeling = payload.get("current_feeling")
     if not isinstance(current_feeling, dict):
         current_feeling = {}
+
+    # MT-482: a problem the child typed in gets its own story shape and
+    # replaces the feelings setup. Already sanitized by sanitize_story_request
+    # and crisis-checked at the top of /generate-story.
+    child_problem = _clean_prompt_value(payload.get("child_problem"))
+    if child_problem:
+        return build_problem_story_prompt_text(
+            child_problem,
+            _resolve_age(payload.get("age") or payload.get("character_age") or 5),
+            theme=_clean_prompt_value(payload.get("theme")),
+            feeling=_clean_prompt_value(current_feeling.get("emotion_name")),
+        )
 
     emotion_name = _clean_prompt_value(current_feeling.get("emotion_name"))
     emotion_description = _clean_prompt_value(
@@ -940,6 +955,7 @@ def create_story_blueprint(
             payload.get("hero_line"),
             payload.get("hero_seen_by"),
             payload.get("therapeutic_prompt"),
+            payload.get("child_problem"),
         )
         if crisis:
             return jsonify(crisis), 200

@@ -481,11 +481,219 @@ def _get_virtue_instruction(therapeutic_prompt: str, age: int) -> str:
     return ""
 
 
+# MT-482: a story for something the child typed in ("nobody likes me",
+# "I'm weird"). The block below is built in place of the feelings setup and
+# carries its own rules, so _build_feelings_instruction passes it through
+# without the "open by naming the feeling" bullets.
+#
+# The rules deliberately avoid the words for what they are doing (see the
+# vocabulary-leak note above the band rules): the model copies rule nouns into
+# the story, and a story that says "lesson" or "coping" reads like a worksheet.
+PROBLEM_STORY_HEADER = "WHAT IS ON THIS CHILD'S MIND"
+
+_PROBLEM_STORY_FEELINGS_THEMES = frozenset(
+    {
+        "",
+        "big feelings quest",
+        "reset and repair",
+        "heart helper adventure",
+        "after the moment",
+    }
+)
+
+# Which shape the story takes is picked from the child's words. Substring
+# match on purpose ("no friend" covers "no friends", "weird" covers "weirdo").
+# A problem about one particular friend falls through to the general shape.
+_PROBLEM_DIFFERENT_WORDS = (
+    "weird",
+    "different",
+    "strange",
+    "freak",
+    "not normal",
+    "fit in",
+)
+_PROBLEM_FRIEND_WORDS = (
+    "likes me",
+    "like me",
+    "no friend",
+    "any friend",
+    "nobody",
+    "no one",
+    "play with",
+    "left out",
+    "alone",
+    "lonely",
+    "sit with",
+    "invite",
+    "hates me",
+    "hate me",
+)
+
+
+def _problem_story_real_setting(age: int) -> str:
+    if age <= 5:
+        return "preschool, the playground, or a birthday party"
+    if age <= 8:
+        return "a new school, an after-school program, a team, or the lunch table"
+    if age <= 12:
+        return "middle school, a club, a tryout, a group project, or a sleepover"
+    if age <= 17:
+        return "school, a team, a first job, or a friend group"
+    return "an ordinary place in a grown-up's week: work, a class, a neighbourhood"
+
+
+def build_problem_story_prompt_text(
+    problem: str,
+    age: int,
+    theme: str | None = None,
+    feeling: str | None = None,
+) -> str:
+    """Story guidance for a problem the child typed in, in the child's words.
+
+    When the child also picked an adventure theme, the same trouble is woven
+    into that adventure; otherwise the story is set somewhere real for the
+    age. `problem` must already be sanitized (sanitize_story_request) and
+    crisis-checked by the caller.
+    """
+    theme_clean = (theme or "").strip()
+    real_setting = theme_clean.lower() in _PROBLEM_STORY_FEELINGS_THEMES
+    if real_setting:
+        setting_rule = (
+            "- WHERE: set the story somewhere real and familiar for this age: "
+            f"{_problem_story_real_setting(age)}. Ordinary kids on an ordinary "
+            "day: no magic, no talking animals, no mystery to solve, no quest. "
+            "This overrides the CONFLICT line and any fantasy elements listed "
+            "above. One place, one or two days, two or three other kids with "
+            "names."
+        )
+    else:
+        setting_rule = (
+            f'- WHERE: keep the "{theme_clean}" adventure the child chose. '
+            "The same trouble shows up inside that world, among kids the "
+            "hero's own age there (crewmates, apprentices, young creatures). "
+            "Do not leave the adventure for a schoolyard. The adventure is "
+            "the place, and it does not get a plot of its own: one spot in "
+            "that world, one ordinary day there, nothing to find, rescue, or "
+            "defeat. This overrides the CONFLICT line above."
+        )
+
+    # Shared tail for every THE OTHER SIDE rule. No list of example reasons
+    # here on purpose: the model reads a menu of reasons aloud as dialogue.
+    other_side_limits = (
+        " Only ONE kid says it. What that kid says is about their own thing "
+        "(what they are making, carrying, or playing), and it tells the hero "
+        "one plain fact the hero did not know. That kid does not say sorry "
+        "and does not tell the hero it was not their fault. Then the story "
+        "moves on."
+    )
+
+    lowered = problem.lower()
+    different = any(word in lowered for word in _PROBLEM_DIFFERENT_WORDS)
+    friends = any(word in lowered for word in _PROBLEM_FRIEND_WORDS)
+
+    if different:
+        try_rules = [
+            "- WHAT MAKES THE HERO DIFFERENT: pick one ordinary, specific thing "
+            "and show it in the first scene: something the hero loves that the "
+            "others do not, a way of talking or moving, a thing they collect "
+            "or make or know too much about. Not a magic power and not a "
+            "secret talent that wins a contest.",
+            "- Nobody fixes, hides, or tones that thing down, and the hero "
+            "does not trade it away to fit in. The hero may try hiding it "
+            "once, and it feels worse.",
+            "- ONE SMALL TRY: the hero lets one other kid see the thing on "
+            "purpose: shows it, shares it, or answers honestly when asked. "
+            "Write the exact words. It is a little scary to do.",
+            "- THE OTHER SIDE: it turns out one kid had been watching that "
+            "very thing and liked it, or wants it for what they are doing "
+            "right now. That kid says so out loud, in one or two plain "
+            "sentences of their own, and shows an odd thing of their own."
+            + other_side_limits,
+        ]
+    elif friends:
+        try_rules = [
+            "- ONE SMALL TRY: the hero asks one other kid a real question "
+            "about what THEY think, like, or are making, listens to the "
+            "answer, and asks one more about the answer. Write the exact "
+            "words. Not a compliment about their shoes. It is a little scary "
+            "to do, and the first go can come out clumsy or get a short "
+            "answer before the next one lands.",
+            "- THE OTHER SIDE: the answer lets the hero see something that "
+            "could not be seen from where the hero stood. The other kid says "
+            "it out loud, in one or two plain sentences of their own."
+            + other_side_limits,
+        ]
+    else:
+        try_rules = [
+            "- ONE SMALL TRY: the hero does one small real thing about it, "
+            "sized so a child could copy it tomorrow: usually asking the "
+            "person it is about one honest question, or saying one true "
+            "sentence about something that happened (not about how the hero "
+            "feels). Write the exact words. It is a little scary to do.",
+            "- THE OTHER SIDE: the answer lets the hero see something that "
+            "could not be seen from where the hero stood. The other kid says "
+            "it out loud, in one or two plain sentences of their own."
+            + other_side_limits,
+        ]
+
+    lines = [
+        f'{PROBLEM_STORY_HEADER} (their own words): "{problem}"',
+    ]
+    if feeling:
+        lines.append(f"The feeling they picked: {feeling}")
+    lines.extend(
+        [
+            "",
+            "This story is quietly for that. The hero is in the same spot, "
+            "and this is the whole plot, not a side thread.",
+            "- START inside one small scene that shows it: who is there, what "
+            "just happened, what the hero does with their hands or feet. Never "
+            "quote the child's sentence back, and never have anyone name what "
+            "is wrong with the hero.",
+            setting_rule,
+            *try_rules,
+            "- Take it seriously the whole way. The worst the hero gets from "
+            "another kid is a shrug or a short answer: nobody laughs at the "
+            "hero, waves them off, or calls it silly. It is never bigger or "
+            "scarier than what the child wrote.",
+            "- KIDS ONLY: the other side comes from kids the hero's age. A "
+            "grown-up may be in the room but does not step in, give advice, "
+            "or sort it out.",
+            "- NO EXPLAINING: nobody, including the narrator, says what any "
+            "of it means or what the hero found out. The hero does not plan "
+            "or rehearse the try, and the narrator never describes it as a "
+            'way of doing things. No sentence like "the hero realized '
+            'that..." or "from that day on...". After someone speaks, the '
+            "narrator goes straight to what happens next and never remarks "
+            "on the line itself.",
+            "- AFTER THE TRY: once the other kid has answered, nothing new "
+            "goes wrong. No second problem, no harder test, nothing to "
+            "rescue, nobody gets hurt. Go straight to the ending.",
+            "- END on one small concrete thing: a saved seat, half a snack, a "
+            "plan for tomorrow. Things are a bit better, not perfect.",
+            "- Stay inside the word count above even if that means fewer scenes.",
+            "- LAST, before returning: reread each sentence that comes right "
+            "after a spoken line. If the narrator says what the line was or "
+            "was not about, what it showed or told the hero, or calls it "
+            "plain, true, small, or exact, delete that sentence.",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def _build_feelings_instruction(
     feelings_prompt: str | None, age: int, theme: str, character: str = "the hero"
 ) -> str:
     if not feelings_prompt:
         return ""
+
+    if feelings_prompt.startswith(PROBLEM_STORY_HEADER):
+        # MT-482: this block carries its own rules; the feeling-first bullets
+        # below ("open by naming the feeling") would fight them.
+        return f"""
+**WHAT THIS STORY IS FOR** (the main thread of the plot):
+{feelings_prompt}
+"""
 
     theme_rule = ""
     if "big feeling" in (theme or "").lower():
@@ -1629,6 +1837,22 @@ BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule b
 
         persona = _get_band_persona(age)
         emotional_spine = _build_emotional_spine(age, theme, character)
+
+        # A problem story (MT-482) is one small try and then the ending. The
+        # escalation rules beat an "ignore them" line in the problem block
+        # (round 3 samples: two "squeezes", a second plan, 2,200 words), so
+        # they are left out of the prompt here instead.
+        if (feelings_prompt or "").startswith(PROBLEM_STORY_HEADER):
+            young_delight_rules = "\n".join(
+                line
+                for line in young_delight_rules.split("\n")
+                if not line.startswith(("5. MOUNTING PRESSURE", "6. TRY / FAIL"))
+            )
+            complexity_instruction = complexity_instruction.replace(
+                " Build a two-part challenge where solving the first problem "
+                "opens a second, harder one.",
+                "",
+            )
 
         # POV is band-conditional. The former unconditional "MANDATORY
         # third-person" line contradicted the 13+/adult band notes ("close
