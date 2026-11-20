@@ -75,7 +75,7 @@ class PromptTemplate:
 TEMPLATES: tuple[PromptTemplate, ...] = (
     PromptTemplate(
         template_id="T1_STANDARD",
-        content_hash="1301812c6c9123ba",
+        content_hash="3163a6c07c8f4a8e",
         source_file="backend/services/story_service.py",
         anchors=("AdvancedStoryEngine.generate_enhanced_prompt",),
         mode="standard",
@@ -389,7 +389,7 @@ TEMPLATES: tuple[PromptTemplate, ...] = (
     ),
     PromptTemplate(
         template_id="T12_FEELINGS",
-        content_hash="353143dc59eff9ff",
+        content_hash="9e45123d4000246b",
         source_file="backend/services/story_service.py",
         anchors=("_build_feelings_instruction",),
         mode="standard",

@@ -571,9 +571,21 @@ def build_problem_story_prompt_text(
             f'- WHERE: keep the "{theme_clean}" adventure the child chose. '
             "The same trouble shows up inside that world, among kids the "
             "hero's own age there (crewmates, apprentices, young creatures). "
-            "Do not leave the adventure for a schoolyard. Keep the adventure "
-            "small enough that this trouble stays in the middle of every page."
+            "Do not leave the adventure for a schoolyard. The adventure is "
+            "the place, and it does not get a plot of its own: one spot in "
+            "that world, one ordinary day there, nothing to find, rescue, or "
+            "defeat. This overrides the CONFLICT line above."
         )
+
+    # Shared tail for every THE OTHER SIDE rule. No list of example reasons
+    # here on purpose: the model reads a menu of reasons aloud as dialogue.
+    other_side_limits = (
+        " Only ONE kid says it. What that kid says is about their own thing "
+        "(what they are making, carrying, or playing), and it tells the hero "
+        "one plain fact the hero did not know. That kid does not say sorry "
+        "and does not tell the hero it was not their fault. Then the story "
+        "moves on."
+    )
 
     lowered = problem.lower()
     different = any(word in lowered for word in _PROBLEM_DIFFERENT_WORDS)
@@ -593,9 +605,10 @@ def build_problem_story_prompt_text(
             "purpose: shows it, shares it, or answers honestly when asked. "
             "Write the exact words. It is a little scary to do.",
             "- THE OTHER SIDE: it turns out one kid had been watching that "
-            "very thing and liked it, or the group ends up needing exactly "
-            "that. The other kid says so out loud, in one or two plain "
-            "sentences of their own, and shares an odd thing of their own.",
+            "very thing and liked it, or wants it for what they are doing "
+            "right now. That kid says so out loud, in one or two plain "
+            "sentences of their own, and shows an odd thing of their own."
+            + other_side_limits,
         ]
     elif friends:
         try_rules = [
@@ -605,22 +618,22 @@ def build_problem_story_prompt_text(
             "words. Not a compliment about their shoes. It is a little scary "
             "to do, and the first go can come out clumsy or get a short "
             "answer before the next one lands.",
-            "- THE OTHER SIDE: the hero finds out what was going on for the "
-            "other kids, which could not be seen from where the hero stood: "
-            "they were shy too, or wrapped up in a trouble of their own, or "
-            "they thought the hero did not like THEM. One of them says it out "
-            "loud, in one or two plain sentences of their own.",
+            "- THE OTHER SIDE: the answer lets the hero see something that "
+            "could not be seen from where the hero stood. The other kid says "
+            "it out loud, in one or two plain sentences of their own."
+            + other_side_limits,
         ]
     else:
         try_rules = [
             "- ONE SMALL TRY: the hero does one small real thing about it, "
-            "sized so a child could copy it tomorrow: usually saying one true "
-            "sentence to the person it is about, or asking them one honest "
-            "question. Write the exact words. It is a little scary to do.",
-            "- THE OTHER SIDE: the hero finds out what was going on for the "
-            "other person, which could not be seen from where the hero stood. "
-            "The other person says it out loud, in one or two plain sentences "
-            "of their own. It is not the hero's fault and not theirs either.",
+            "sized so a child could copy it tomorrow: usually asking the "
+            "person it is about one honest question, or saying one true "
+            "sentence about something that happened (not about how the hero "
+            "feels). Write the exact words. It is a little scary to do.",
+            "- THE OTHER SIDE: the answer lets the hero see something that "
+            "could not be seen from where the hero stood. The other kid says "
+            "it out loud, in one or two plain sentences of their own."
+            + other_side_limits,
         ]
 
     lines = [
@@ -650,10 +663,19 @@ def build_problem_story_prompt_text(
             "of it means or what the hero found out. The hero does not plan "
             "or rehearse the try, and the narrator never describes it as a "
             'way of doing things. No sentence like "the hero realized '
-            'that..." or "from that day on...".',
+            'that..." or "from that day on...". After someone speaks, the '
+            "narrator goes straight to what happens next and never remarks "
+            "on the line itself.",
+            "- AFTER THE TRY: once the other kid has answered, nothing new "
+            "goes wrong. No second problem, no harder test, nothing to "
+            "rescue, nobody gets hurt. Go straight to the ending.",
             "- END on one small concrete thing: a saved seat, half a snack, a "
             "plan for tomorrow. Things are a bit better, not perfect.",
-            "- Stay inside the word count above even if that means fewer " "scenes.",
+            "- Stay inside the word count above even if that means fewer scenes.",
+            "- LAST, before returning: reread each sentence that comes right "
+            "after a spoken line. If the narrator says what the line was or "
+            "was not about, what it showed or told the hero, or calls it "
+            "plain, true, small, or exact, delete that sentence.",
         ]
     )
     return "\n".join(lines)
@@ -1815,6 +1837,22 @@ BUDGET NOTE: Pages are only 10-25 words — no single page can hold every rule b
 
         persona = _get_band_persona(age)
         emotional_spine = _build_emotional_spine(age, theme, character)
+
+        # A problem story (MT-482) is one small try and then the ending. The
+        # escalation rules beat an "ignore them" line in the problem block
+        # (round 3 samples: two "squeezes", a second plan, 2,200 words), so
+        # they are left out of the prompt here instead.
+        if (feelings_prompt or "").startswith(PROBLEM_STORY_HEADER):
+            young_delight_rules = "\n".join(
+                line
+                for line in young_delight_rules.split("\n")
+                if not line.startswith(("5. MOUNTING PRESSURE", "6. TRY / FAIL"))
+            )
+            complexity_instruction = complexity_instruction.replace(
+                " Build a two-part challenge where solving the first problem "
+                "opens a second, harder one.",
+                "",
+            )
 
         # POV is band-conditional. The former unconditional "MANDATORY
         # third-person" line contradicted the 13+/adult band notes ("close
