@@ -15,6 +15,7 @@ import 'subscription_screen.dart';
 import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_card.dart';
+import 'widgets/gift_code_redeem_dialog.dart';
 import 'widgets/parental_gate_dialog.dart';
 import 'screens/child_profile_manager_screen.dart';
 import 'screens/parent_dashboard_screen.dart';
@@ -221,6 +222,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: AppSpacing.md),
               _buildSubscriptionCard(context),
+              const SizedBox(height: AppSpacing.md),
+              _buildGiftCodeCard(context),
             ],
             const SizedBox(height: AppSpacing.lg),
             _buildLegalLinks(context),
@@ -299,6 +302,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           MaterialPageRoute(
               builder: (_) => const SubscriptionManagementScreen()),
         ),
+      ),
+    );
+  }
+
+  Widget _buildGiftCodeCard(BuildContext context) {
+    return AppCard(
+      child: ListTile(
+        leading:
+            const Icon(Icons.card_giftcard_rounded, color: AppColors.primary),
+        title: const Text('Redeem a gift code',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: const Text('Got Premium as a gift? Enter your code here'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => showGiftCodeRedeemDialog(context),
       ),
     );
   }
