@@ -199,6 +199,20 @@ void main() {
     expect(find.text('Premium Subscription'), findsOneWidget);
   });
 
+  testWidgets('a gift code can be entered straight from settings',
+      (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+    await pumpSettingsScreen(tester);
+
+    await tester.ensureVisible(find.text('Redeem a gift code'));
+    await tester.tap(find.text('Redeem a gift code'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+  });
+
   testWidgets('account/legal settings open privacy policy screen',
       (tester) async {
     setLargeScreen(tester);
