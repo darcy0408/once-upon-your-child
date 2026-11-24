@@ -89,7 +89,7 @@ void main() {
     expect(find.byKey(const Key('wisdom_chip')), findsNothing);
   });
 
-    testWidgets('StoryResultScreen hides wisdom chip when wisdom text is empty',
+  testWidgets('StoryResultScreen hides wisdom chip when wisdom text is empty',
       (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -117,7 +117,7 @@ void main() {
 
     expect(find.textContaining('A tiny test story'), findsOneWidget);
     expect(find.byKey(const Key('wisdom_chip')), findsNothing);
-    });
+  });
 
   // MT-381(b): _effectiveAge must not collapse to the age-7 kid flip-book
   // when the character fetch is unavailable. OpenBookFrame only exists in
@@ -178,8 +178,7 @@ void main() {
 
   // ~600 words: comfortably more than the 120-words-per-page split, so the
   // reader has several pages and overflows the test viewport.
-  final longStoryText =
-      List.generate(600, (i) => 'word$i').join(' ');
+  final longStoryText = List.generate(600, (i) => 'word$i').join(' ');
 
   Future<void> pumpReader(WidgetTester tester) async {
     await tester.pumpWidget(
@@ -238,8 +237,7 @@ void main() {
     );
   });
 
-  testWidgets(
-      'MT-381(a): scrolling to the end reveals the end-of-story row',
+  testWidgets('MT-381(a): scrolling to the end reveals the end-of-story row',
       (tester) async {
     await pumpReader(tester);
 
@@ -263,5 +261,47 @@ void main() {
           'by scrolling to the last word — never saw the rating row or the '
           'Color-this-page chip',
     );
+  });
+
+  testWidgets('flip book keeps the action bar off screen until the last page',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: StoryResultScreen(
+            title: 'Two Page Story',
+            storyText: 'First page words.\n\nSecond page words.',
+            pages: const ['First page words.', 'Second page words.'],
+            characterName: 'Jesse',
+            characterAge: 8,
+            storyId: 'flip-bar',
+            trackStoryCreation: false,
+            trackAnalytics: false,
+            offlineService: FakeOfflineStoryService(),
+          ),
+        ),
+      ),
+    );
+    await pumpUntilFound(tester, finder: find.byType(OpenBookFrame));
+
+    expect(find.text('Two Page Story'), findsOneWidget);
+    expect(find.text('Created with AI'), findsOneWidget);
+    expect(find.textContaining('Reading Level'), findsNothing);
+    expect(
+      find.textContaining('Tell Me Another'),
+      findsNothing,
+      reason: 'while the child is reading, the page has the screen to itself',
+    );
+
+    // Turn pages until the last one (the story may add an end page).
+    for (var turn = 0; turn < 4; turn++) {
+      if (find.textContaining('Tell Me Another').evaluate().isNotEmpty) break;
+      await tester.tap(find.byTooltip('Next page').last, warnIfMissed: false);
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+    }
+
+    expect(find.textContaining('Tell Me Another'), findsOneWidget);
   });
 }

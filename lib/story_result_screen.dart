@@ -267,6 +267,13 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
   FlutterTts? _tts;
   AudioPlayer? _audioPlayer;
   bool _ttsAutoEnabled = false;
+  // Page narration state for the pause / keep-reading button. A session
+  // counter lets a stop or a newer page cancel a synthesis still in flight.
+  bool _isNarrating = false;
+  bool _isNarrationPaused = false;
+  bool _narrationIsDeviceVoice = false;
+  int _narrationSession = 0;
+  String? _narrationText;
 
   List<_InlineIllustration> _inlineIllustrations = [];
 
@@ -779,15 +786,70 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     await _tts!.setSpeechRate(0.45); // Slower for young listeners
     await _tts!.setPitch(1.1);
     _audioPlayer = AudioPlayer();
+    _audioPlayer!.onPlayerComplete.listen((_) => _onNarrationFinished());
+    _tts!.setCompletionHandler(_onNarrationFinished);
     if (mounted) setState(() => _ttsAutoEnabled = true);
+  }
+
+  void _onNarrationFinished() {
+    if (!mounted || !_isNarrating || _isNarrationPaused) return;
+    setState(() => _isNarrating = false);
+  }
+
+  /// Silences the page narration and resets the pause button.
+  void _stopNarration() {
+    _narrationSession++;
+    unawaited(_tts?.stop());
+    unawaited(_audioPlayer?.stop());
+    if (mounted && (_isNarrating || _isNarrationPaused)) {
+      setState(() {
+        _isNarrating = false;
+        _isNarrationPaused = false;
+      });
+    }
+  }
+
+  /// The footer narration button: read this page, pause, or keep reading.
+  Future<void> _toggleNarration(String text) async {
+    if (!_isNarrating) {
+      await _speakPage(text);
+      return;
+    }
+    if (!_isNarrationPaused) {
+      setState(() => _isNarrationPaused = true);
+      if (_narrationIsDeviceVoice) {
+        // The on-device voice can't resume mid-sentence on every platform,
+        // so a pause stops it and "keep reading" starts the page again.
+        await _tts?.stop();
+      } else {
+        await _audioPlayer?.pause();
+      }
+      return;
+    }
+    if (_narrationIsDeviceVoice) {
+      await _speakPage(_narrationText ?? text);
+    } else {
+      setState(() => _isNarrationPaused = false);
+      await _audioPlayer?.resume();
+    }
   }
 
   /// Narrate a story page — tries ElevenLabs first, falls back to on-device TTS.
   Future<void> _speakPage(String text) async {
     // MT-311: stop whatever was still narrating (auto or manual replay)
     // before starting the new page/utterance, so speech never overlaps.
+    final session = ++_narrationSession;
+    _narrationText = text;
+    _narrationIsDeviceVoice = false;
     await _tts?.stop();
     await _audioPlayer?.stop();
+    if (session != _narrationSession) return;
+    if (mounted) {
+      setState(() {
+        _isNarrating = true;
+        _isNarrationPaused = false;
+      });
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedVoiceId = prefs.getString(ElevenLabsVoice.prefsKey);
@@ -795,6 +857,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       final voiceId = savedVoiceId ??
           ElevenLabsVoice.defaultVoiceIdForBand(ageBandFromAge(_effectiveAge));
       final ttsResult = await TtsApiService.synthesize(text, voiceId: voiceId);
+      // The reader paused, stopped or turned the page while this was loading.
+      if (session != _narrationSession || _isNarrationPaused) return;
       final mp3 = ttsResult?.audioBytes;
       if (mp3 != null && mp3.isNotEmpty) {
         await _audioPlayer?.stop();
@@ -804,15 +868,28 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     } on TtsConsentGateException {
       // COPPA gate — no resolved age/consent server-side. Stay silent
       // rather than narrating the page in the robotic on-device voice.
+      _narrationSilenced(session);
       return;
     } on TtsQuotaExceededException {
       // Daily synthesis quota spent — silence, never robotic.
+      _narrationSilenced(session);
       return;
     } on TtsRateLimitException {
       // Transient rate limit — skip this utterance silently.
+      _narrationSilenced(session);
       return;
     } catch (_) {}
+    if (session != _narrationSession || _isNarrationPaused) return;
+    _narrationIsDeviceVoice = true;
     await _tts?.speak(text);
+  }
+
+  void _narrationSilenced(int session) {
+    if (!mounted || session != _narrationSession) return;
+    setState(() {
+      _isNarrating = false;
+      _isNarrationPaused = false;
+    });
   }
 
   void _decodeInlineIllustrations() {
@@ -1186,8 +1263,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     // Companions arrive one per story created. The count is the same
     // ProgressionService counter incremented just above.
     try {
-      final newCount = (await _progressionService.getUserProgress())
-          .storiesCreated;
+      final newCount =
+          (await _progressionService.getUserProgress()).storiesCreated;
       final arrivedId = CompanionUnlockService.newlyUnlockedCompanionId(
         ageBandFromAge(_effectiveAge),
         newCount - 1,
@@ -2790,8 +2867,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       // — otherwise the previous page's auto-narrated (or manually
       // triggered) audio keeps talking over the new page. No-ops when
       // nothing is playing / on bands where _tts and _audioPlayer are null.
-      unawaited(_tts?.stop());
-      unawaited(_audioPlayer?.stop());
+      _stopNarration();
       setState(() {
         if (isForward) {
           _currentPageIndex = (_currentPageIndex + 1).clamp(0, _totalPages - 1);
@@ -3015,10 +3091,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
 
   /// Builds the page that occupies index [index] of the flip stack.
   ///
-  /// On wide viewports (web / tablet landscape) this returns a two-page
-  /// spread — the page itself on the left and a peek of the next leaf on
-  /// the right, joined by a centre binding shadow — so the reader feels
-  /// like an open book. On narrow phones it stays a single full-bleed page.
+  /// The book shows ONE story page at a time. On wide viewports (web /
+  /// tablet landscape) that page opens as a picture-book spread: its
+  /// illustration on the left leaf and its words on the right, so the whole
+  /// page of text is visible without scrolling. On narrow phones, and for
+  /// pages with no picture, it is a single leaf.
   Widget _buildStoryPage(int index) {
     // Cover illustration page — always full-bleed, never part of a spread.
     if (_hasCoverIllustration && index == 0) {
@@ -3026,25 +3103,79 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     }
 
     final isWide = MediaQuery.of(context).size.width >= 720;
-    if (!isWide) return _buildSinglePage(index, bindingSide: null);
+    if (!isWide) return _buildLoneLeaf(index);
 
-    // Two-page spread: current leaf binds on the right, the next leaf binds
-    // on the left, and the StoryBookPage spine shadows meet in a gutter.
-    final hasNext = index < _totalPages - 1;
+    final textIndex = _hasCoverIllustration ? index - 1 : index;
+    if (textIndex < 0 || textIndex >= _storyPages.length) {
+      return _buildLoneLeaf(index);
+    }
+    final hasPersistedArt = textIndex < _persistedPageIllustrations.length &&
+        _persistedPageIllustrations[textIndex] != null;
+    if (hasPersistedArt) return _buildPictureSpread(index, textIndex);
+    final prefetcher = _perPagePrefetcher;
+    if (prefetcher == null) return _buildLoneLeaf(index);
+    // The picture arrives (or fails) after the page is on screen, so the
+    // choice between spread and single leaf follows the prefetch state.
+    return ValueListenableBuilder<PageIllustrationState>(
+      valueListenable: prefetcher.stateOf(textIndex),
+      builder: (context, state, _) {
+        final hasPicture = switch (state.status) {
+          PageIllustrationStatus.ready => state.bytes != null,
+          PageIllustrationStatus.queued ||
+          PageIllustrationStatus.loading =>
+            true,
+          PageIllustrationStatus.quotaExceeded => _useInlineQuotaUpsell,
+          PageIllustrationStatus.idle || PageIllustrationStatus.failed => false,
+        };
+        return hasPicture
+            ? _buildPictureSpread(index, textIndex)
+            : _buildLoneLeaf(index);
+      },
+    );
+  }
+
+  /// A single leaf that fills the book frame, however short its text.
+  Widget _buildLoneLeaf(int index) =>
+      SizedBox.expand(child: _buildSinglePage(index, bindingSide: null));
+
+  /// Wide-viewport spread for one story page: picture left, words right.
+  Widget _buildPictureSpread(int index, int textIndex) {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final isDarkPage = !_highContrastMode && band.preferDarkMode;
+    final pageBg = _highContrastMode
+        ? Colors.black
+        : (band.preferDarkMode
+            ? const Color(0xFF1A1A2E)
+            : const Color(0xFFFFF8E7));
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          child: _buildSinglePage(index, bindingSide: BookBindingSide.right),
+          child: StoryBookPage(
+            backgroundColor: pageBg,
+            showDecorations: !_highContrastMode && !band.preferDarkMode,
+            bindingSide: BookBindingSide.right,
+            darkPage: _highContrastMode || isDarkPage,
+            framed: !_highContrastMode,
+            contentPadding: const EdgeInsets.fromLTRB(18, 18, 22, 18),
+            child: InkWell(
+              onTap: () {
+                if (index < _totalPages - 1) _goToNextStoryPage();
+              },
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              child: Center(child: _buildPerPageIllustration(textIndex)),
+            ),
+          ),
         ),
         Expanded(
-          child: hasNext
-              ? _buildSinglePage(index + 1,
-                  bindingSide: BookBindingSide.left, isSpreadPeek: true)
-              : _buildSinglePage(index,
-                  bindingSide: BookBindingSide.left,
-                  isSpreadPeek: true,
-                  blankLeaf: true),
+          child: _buildSinglePage(
+            index,
+            bindingSide: BookBindingSide.left,
+            showPicture: false,
+            showPageEdges: false,
+          ),
         ),
       ],
     );
@@ -3060,6 +3191,8 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
     required BookBindingSide? bindingSide,
     bool isSpreadPeek = false,
     bool blankLeaf = false,
+    bool showPicture = true,
+    bool? showPageEdges,
   }) {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
@@ -3113,7 +3246,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
       darkPage: _highContrastMode || isDarkPage,
       // The right-hand leaf of a spread sits against the gutter, not a free
       // edge, so it doesn't carry the page-edge fan.
-      showPageEdges: !isSpreadPeek,
+      showPageEdges: showPageEdges ?? !isSpreadPeek,
       framed: !_highContrastMode,
       pageLabel: pageLabel,
       // MT-071(a): tap-to-turn. A tap anywhere on the page body reveals the
@@ -3142,78 +3275,114 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         },
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,
-        child: SingleChildScrollView(
-          // Per-index key forces a fresh Scrollable on page change so scroll
-          // offset from the previous page doesn't bleed onto the next.
-          key: ValueKey('story-page-scroll-$index'),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Per-page illustration. Renders art persisted from a saved
-              // story directly, otherwise the background prefetch:
-              // bytes when ready, a skeleton while loading, an upsell card
-              // when the free-tier monthly cap is hit (older bands only),
-              // and nothing otherwise.
-              _buildPerPageIllustration(textIndex),
-              // Story text - MAGIC TYPEWRITER EFFECT
-              if (!isRevealed)
-                MagicalTypewriterText(
-                  text: pageText,
-                  readerAge: _effectiveAge,
-                  onComplete: () {
-                    setState(() {
-                      _revealedPages.add(index);
-                    });
-                    // MT-311: a pre-reader can't read the ~40s of typewriter
-                    // text that was just revealed, so auto-narrate it the
-                    // instant it finishes — mirrors story_reader_screen's
-                    // (the Reread screen) existing auto-play for young
-                    // bands. Older bands are untouched: unexpected audio is
-                    // embarrassing for them (see _onFirstFrame above). The
-                    // typewriter widget for this index is removed from the
-                    // tree once revealed, so this fires at most once per
-                    // page view; _handlePageFlip stops any in-flight
-                    // narration when the reader turns the page.
-                    if (band.band.isYoung && _ttsAutoEnabled) {
-                      _speakPage(pageText);
-                    }
-                  },
-                  style: GoogleFonts.merriweather(
-                    fontSize: band.body(20) * _textScale,
-                    height: lineHeight,
-                    color: pageTextColor,
-                  ),
-                )
-              else
-                SelectableText.rich(
-                  TextSpan(
-                    style: GoogleFonts.merriweather(
-                      fontSize: band.body(20) * _textScale,
-                      height: lineHeight,
-                      color: pageTextColor,
+        child: LayoutBuilder(
+          builder: (context, leaf) => SingleChildScrollView(
+            // Per-index key forces a fresh Scrollable on page change so scroll
+            // offset from the previous page doesn't bleed onto the next.
+            key: ValueKey('story-page-scroll-$index'),
+            child: Center(
+                child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Per-page illustration. Renders art persisted from a saved
+                  // story directly, otherwise the background prefetch:
+                  // bytes when ready, a skeleton while loading, an upsell card
+                  // when the free-tier monthly cap is hit (older bands only),
+                  // and nothing otherwise. On a wide spread the picture has
+                  // the facing leaf to itself. Here it is capped so the words
+                  // always keep more than half the leaf.
+                  if (showPicture)
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight: leaf.maxHeight.isFinite
+                              ? (leaf.maxHeight * 0.42).clamp(140.0, 520.0)
+                              : 520.0,
+                        ),
+                        child: _buildPerPageIllustration(textIndex),
+                      ),
                     ),
-                    children: _buildStorySpans(pageText),
-                  ),
-                ),
-              if (_ttsAutoEnabled)
-                Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: Center(
-                    child: IconButton(
-                      tooltip: 'Read page out loud',
-                      icon: const Icon(Icons.volume_up_rounded,
-                          color: AppColors.gold, size: 36),
-                      onPressed: () => _speakPage(_storyPages[textIndex]),
+                  // Story text - MAGIC TYPEWRITER EFFECT
+                  if (!isRevealed)
+                    MagicalTypewriterText(
+                      text: pageText,
+                      readerAge: _effectiveAge,
+                      onComplete: () {
+                        setState(() {
+                          _revealedPages.add(index);
+                        });
+                        // MT-311: a pre-reader can't read the ~40s of typewriter
+                        // text that was just revealed, so auto-narrate it the
+                        // instant it finishes — mirrors story_reader_screen's
+                        // (the Reread screen) existing auto-play for young
+                        // bands. Older bands are untouched: unexpected audio is
+                        // embarrassing for them (see _onFirstFrame above). The
+                        // typewriter widget for this index is removed from the
+                        // tree once revealed, so this fires at most once per
+                        // page view; _handlePageFlip stops any in-flight
+                        // narration when the reader turns the page.
+                        if (band.band.isYoung && _ttsAutoEnabled) {
+                          _speakPage(pageText);
+                        }
+                      },
+                      style: GoogleFonts.merriweather(
+                        fontSize: band.body(20) * _textScale,
+                        height: lineHeight,
+                        color: pageTextColor,
+                      ),
+                    )
+                  else
+                    SelectableText.rich(
+                      TextSpan(
+                        style: GoogleFonts.merriweather(
+                          fontSize: band.body(20) * _textScale,
+                          height: lineHeight,
+                          color: pageTextColor,
+                        ),
+                        children: _buildStorySpans(pageText),
+                      ),
                     ),
-                  ),
-                ),
-              // Bottom breathing room so the page-number badge tucked into
-              // the corner never collides with the last line of text.
-              const SizedBox(height: 18),
-            ],
+                  // Bottom breathing room so the page-number badge tucked into
+                  // the corner never collides with the last line of text.
+                  const SizedBox(height: 18),
+                ],
+              ),
+            )),
           ),
         ),
       ),
+    );
+  }
+
+  /// Text of the story page on screen, or null on the cover / end page.
+  String? get _currentPageNarrationText {
+    final textIndex =
+        _hasCoverIllustration ? _currentPageIndex - 1 : _currentPageIndex;
+    if (textIndex < 0 || textIndex >= _storyPages.length) return null;
+    return widget.isLearningToReadMode
+        ? _phrasifyForEarlyReader(_storyPages[textIndex])
+        : _storyPages[textIndex];
+  }
+
+  /// Read / pause / keep-reading button for the page on screen. Lives in the
+  /// footer so it is always visible, not at the bottom of the page scroll.
+  Widget _buildNarrationButton(String text) {
+    final playing = _isNarrating && !_isNarrationPaused;
+    final label = playing
+        ? 'Pause'
+        : (_isNarrationPaused ? 'Keep reading' : 'Read page out loud');
+    final icon = playing
+        ? Icons.pause_circle_filled_rounded
+        : (_isNarrationPaused
+            ? Icons.play_circle_fill_rounded
+            : Icons.volume_up_rounded);
+    return IconButton(
+      tooltip: label,
+      iconSize: 36,
+      icon: Icon(icon, color: AppColors.primary),
+      onPressed: () => _toggleNarration(text),
     );
   }
 
@@ -4565,7 +4734,11 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                 Expanded(
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 800),
+                      // The flip book opens as a picture + words spread on
+                      // wide screens, so it gets more room than the single
+                      // text column of the scrolling reader (ages 11+).
+                      constraints: BoxConstraints(
+                          maxWidth: _isReaderLayout ? 800 : 1100),
                       child: LayoutBuilder(
                         builder: (context, areaConstraints) {
                           // On narrow phones, reclaim every pixel for the page itself.
@@ -4583,92 +4756,139 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                           // for sprout, and on any short viewport where space is precious.
                           final showReadingLevel =
                               band.band != AgeBand.sprout && !isShortArea;
+                          // The flip book gives the screen to the page: the
+                          // title and the AI label share one slim line and
+                          // the reading-level pill is dropped.
+                          final compactHeader = !_isReaderLayout;
                           return Padding(
                             padding: EdgeInsets.symmetric(
                                 horizontal: outerHorizontal),
                             child: Column(
                               children: [
-                                SizedBox(height: titleSpacing),
-                                Text(
-                                  widget.title,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.merriweather(
-                                    fontSize: titleSize,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                        color:
-                                            Colors.black.withValues(alpha: 0.3),
-                                        offset: const Offset(0, 2),
-                                        blurRadius: 4,
+                                if (compactHeader) ...[
+                                  SizedBox(height: band.space(4)),
+                                  // Title and AI label share a line when
+                                  // they fit; on a phone the label drops to
+                                  // a second line so the title stays whole.
+                                  Wrap(
+                                    alignment: WrapAlignment.center,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    spacing: band.space(8),
+                                    runSpacing: band.space(4),
+                                    children: [
+                                      ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          maxWidth: areaConstraints.maxWidth -
+                                              2 * outerHorizontal,
+                                        ),
+                                        child: Text(
+                                          widget.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.merriweather(
+                                            fontSize: band.heading(
+                                                isNarrowArea ? 15 : 18),
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                      // AI-transparency label (see the
+                                      // full-size header below for why it
+                                      // must stay on screen).
+                                      GestureDetector(
+                                        onTap: _showAiInfo,
+                                        child: const AiGeneratedBadge(
+                                          label: 'Created with AI',
+                                        ),
                                       ),
                                     ],
                                   ),
-                                ),
-                                // Thin gold rule under the title — evokes a
-                                // chapter heading and ties the title to the
-                                // book below it.
-                                SizedBox(height: band.space(8)),
-                                Container(
-                                  width: isNarrowArea ? 90 : 140,
-                                  height: 2,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(1),
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppColors.gold.withValues(alpha: 0.0),
-                                        AppColors.gold,
-                                        AppColors.gold.withValues(alpha: 0.0),
+                                  SizedBox(height: band.space(8)),
+                                ] else ...[
+                                  SizedBox(height: titleSpacing),
+                                  Text(
+                                    widget.title,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.merriweather(
+                                      fontSize: titleSize,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black
+                                              .withValues(alpha: 0.3),
+                                          offset: const Offset(0, 2),
+                                          blurRadius: 4,
+                                        ),
                                       ],
-                                      stops: const [0.0, 0.5, 1.0],
                                     ),
                                   ),
-                                ),
-                                if (showReadingLevel) ...[
+                                  // Thin gold rule under the title — evokes a
+                                  // chapter heading and ties the title to the
+                                  // book below it.
                                   SizedBox(height: band.space(8)),
                                   Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: band.space(12),
-                                      vertical: band.space(6),
-                                    ),
+                                    width: isNarrowArea ? 90 : 140,
+                                    height: 2,
                                     decoration: BoxDecoration(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.15),
-                                      borderRadius:
-                                          BorderRadius.circular(band.radiusMd),
-                                      border: Border.all(
-                                        color:
-                                            band.accent.withValues(alpha: 0.55),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      _readingLevelLabel(band),
-                                      style: GoogleFonts.quicksand(
-                                        color: band.accentLight,
-                                        fontSize: band.body(12),
-                                        fontWeight: FontWeight.w700,
+                                      borderRadius: BorderRadius.circular(1),
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          AppColors.gold.withValues(alpha: 0.0),
+                                          AppColors.gold,
+                                          AppColors.gold.withValues(alpha: 0.0),
+                                        ],
+                                        stops: const [0.0, 0.5, 1.0],
                                       ),
                                     ),
                                   ),
+                                  if (showReadingLevel) ...[
+                                    SizedBox(height: band.space(8)),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: band.space(12),
+                                        vertical: band.space(6),
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(
+                                            band.radiusMd),
+                                        border: Border.all(
+                                          color: band.accent
+                                              .withValues(alpha: 0.55),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        _readingLevelLabel(band),
+                                        style: GoogleFonts.quicksand(
+                                          color: band.accentLight,
+                                          fontSize: band.body(12),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  // Persistent AI-transparency label. Required by
+                                  // Google Play's Generative-AI policy, Apple, and
+                                  // EU AI Act Art. 50: this story and its artwork
+                                  // are machine-generated. Tap for details.
+                                  SizedBox(height: band.space(8)),
+                                  GestureDetector(
+                                    onTap: _showAiInfo,
+                                    child: const AiGeneratedBadge(
+                                      label: 'Created with AI',
+                                    ),
+                                  ),
+                                  SizedBox(
+                                      height: isShortArea
+                                          ? band.space(12)
+                                          : band.space(24)),
                                 ],
-                                // Persistent AI-transparency label. Required by
-                                // Google Play's Generative-AI policy, Apple, and
-                                // EU AI Act Art. 50: this story and its artwork
-                                // are machine-generated. Tap for details.
-                                SizedBox(height: band.space(8)),
-                                GestureDetector(
-                                  onTap: _showAiInfo,
-                                  child: const AiGeneratedBadge(
-                                    label: 'Created with AI',
-                                  ),
-                                ),
-                                SizedBox(
-                                    height: isShortArea
-                                        ? band.space(12)
-                                        : band.space(24)),
                                 Expanded(
                                   child: _isLoading
                                       ? const Center(
@@ -4933,6 +5153,12 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                                         ),
                                                       ],
                                                     ),
+                                                  if (_ttsAutoEnabled &&
+                                                      !_isReaderLayout &&
+                                                      _currentPageNarrationText !=
+                                                          null)
+                                                    _buildNarrationButton(
+                                                        _currentPageNarrationText!),
                                                   // NEW: Storybook progress indicator instead of "Chapter X of Y"
                                                   StorybookProgressIndicator(
                                                     currentPage:
@@ -4961,7 +5187,7 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
                                           ],
                                         ),
                                 ),
-                                const SizedBox(height: 24),
+                                SizedBox(height: compactHeader ? 8 : 24),
                               ],
                             ),
                           );
@@ -4976,7 +5202,9 @@ class _StoryResultScreenState extends ConsumerState<StoryResultScreen> {
         ),
         // Use a bottom action bar instead of a floating button cluster so it doesn't
         // cover the story footer controls on smaller viewports.
-        bottomNavigationBar: _isLoading
+        // In the flip book the action bar waits for the last page, so the
+        // story page has the screen to itself while the child is reading.
+        bottomNavigationBar: _isLoading || (!_isReaderLayout && !_isOnEndPage)
             ? null
             : _PostStoryActionBar(
                 isSaved: _isSaved,
