@@ -9,7 +9,9 @@ import '../services/app_tts_service.dart';
 import '../services/api_service_manager.dart';
 import '../services/bedtime_replay_service.dart';
 import '../services/interactive_story_service.dart';
+import '../services/companion_unlock_service.dart';
 import '../services/user_identity_service.dart';
+import '../widgets/companion_arrival_card.dart' show companionForId;
 import '../widgets/crisis_resources_panel.dart';
 import '../models/story_generation_result.dart' show StoryGenerationCancelled;
 import '../models.dart';
@@ -24,6 +26,29 @@ import 'wizard_steps/wizard_data_mapper.dart';
 
 /// Voice-driven bedtime story wizard.
 /// Minimal screen — just a pulsing star and voice interaction.
+/// The spoken goodnight at the end of a bedtime story. When the story
+/// unlocked a magic companion, it is mentioned quietly, as something to look
+/// forward to tomorrow; the screen stays dark and no card is shown.
+String bedtimeDonePrompt({
+  required String childName,
+  required bool isMature,
+  String? newBuddyName,
+}) {
+  final buddy = (newBuddyName == null || newBuddyName.trim().isEmpty)
+      ? null
+      : newBuddyName.trim();
+  if (isMature) {
+    return buddy == null
+        ? "That's the end. Rest well, $childName."
+        : "That's the end. $buddy has joined your companions. "
+            "Rest well, $childName.";
+  }
+  return buddy == null
+      ? "The end. Goodnight, $childName. Sweet dreams."
+      : "The end. $buddy will be waiting to meet you tomorrow. "
+          "Goodnight, $childName. Sweet dreams.";
+}
+
 class BedtimeWizardScreen extends ConsumerStatefulWidget {
   final String childName;
   final int childAge;
@@ -369,6 +394,9 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     });
   }
 
+  // Name of a magic companion tonight's story unlocked, if any.
+  String? _arrivedCompanionName;
+
   void _handleSleepTimer() async {
     _timerExpired = true;
     _sleepTimer?.cancel();
@@ -669,13 +697,23 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
         break;
 
       case BedtimeStep.done:
-        final donePrompt = _isMature
-            ? "That's the end. Rest well, ${widget.childName}."
-            : "The end. Goodnight, ${widget.childName}. Sweet dreams.";
-        await _speak(donePrompt);
+        await _speak(bedtimeDonePrompt(
+          childName: widget.childName,
+          isMature: _isMature,
+          newBuddyName: _arrivedCompanionName,
+        ));
         _settleForTheNight();
         break;
     }
+  }
+
+  /// Counts tonight's story toward unlocks and remembers the name of a
+  /// magic companion it unlocked, so the goodnight line can mention it.
+  Future<void> _countStory() async {
+    final id =
+        await CompanionUnlockService.countStoryAndFindArrival(_effectiveAge);
+    if (id == null) return;
+    _arrivedCompanionName = companionForId(_ageBand, id)?.name;
   }
 
   /// Normalises a hand-off seed: blank/whitespace counts as "not provided".
@@ -1271,6 +1309,9 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
     reassurance.cancel();
     // PERF-04: story text is in hand — nothing left to cancel.
     _activeTaskId = null;
+    // A new bedtime story counts toward unlocks. A replayed one never
+    // reaches this function.
+    unawaited(_countStory());
 
     // MT-361(b): save so "Play last night's story again" can replay this one
     // next time with zero generation cost. Best-effort and fire-and-forget —
@@ -1387,6 +1428,8 @@ class _BedtimeWizardScreenState extends ConsumerState<BedtimeWizardScreen>
         companions: companions,
         includeImages: false, // audio-only: never renders image_url
       );
+
+      unawaited(_countStory());
 
       final storyId = start.storyId;
       var segment = start.segment;

@@ -11,7 +11,9 @@ import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/services/interactive_story_service.dart';
 import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:story_weaver_app/services/app_tts_service.dart';
+import 'package:story_weaver_app/services/progression_service.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
+import 'package:story_weaver_app/widgets/companion_arrival_card.dart';
 import 'package:story_weaver_app/widgets/error_message.dart';
 import 'package:story_weaver_app/widgets/magical_loading_view.dart';
 import '../helpers/pick_a_path_test_helpers.dart';
@@ -179,6 +181,149 @@ void main() {
       expect(startBody?['worldBible'], 'A lantern-lit harbor town.');
       expect(startBody?['conflictHook'], 'The tide bell has gone silent.');
       expect(startBody?['sensoryPalette'], 'salt air, warm wood');
+    });
+  });
+
+  group('PickAPathAdventureScreen - Unlock counting', () {
+    testLargeWidgets('a new story counts once toward unlocks', (tester) async {
+      final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) {
+          return _authMock(request);
+        }
+        return http.Response(
+          jsonEncode(PickAPathTestHelpers.createStartStoryResponseJson()),
+          200,
+        );
+      });
+      InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
+
+      expect((await ProgressionService().getUserProgress()).storiesCreated, 0);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PickAPathAdventureScreen(
+            userId: 'test_user',
+            character: PickAPathTestHelpers.createTestCharacter(),
+            theme: 'Magic',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect((await ProgressionService().getUserProgress()).storiesCreated, 1);
+    });
+
+    testLargeWidgets('a buddy the story unlocked is announced at the end',
+        (tester) async {
+      int requestCount = 0;
+      final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) {
+          return _authMock(request);
+        }
+        requestCount++;
+        return http.Response(
+          jsonEncode(requestCount == 1
+              ? PickAPathTestHelpers.createStartStoryResponseJson()
+              : PickAPathTestHelpers.createContinueStoryResponseJson(
+                  isCompleted: true,
+                  content: 'The adventure comes to an end.',
+                )),
+          200,
+        );
+      });
+      InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PickAPathAdventureScreen(
+            userId: 'test_user',
+            character: PickAPathTestHelpers.createTestCharacter(),
+            theme: 'Magic',
+            length: 'short',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Not shown while the story is still going.
+      expect(find.byType(CompanionArrivalCard), findsNothing);
+
+      await tester.tap(find.textContaining('Choice 1').first);
+      await tester.pumpAndSettle();
+
+      // First story ever, so the second buddy arrives.
+      expect(find.textContaining('Adventure Complete'), findsOneWidget);
+      expect(find.byType(CompanionArrivalCard), findsOneWidget);
+      expect(find.textContaining('has arrived!'), findsOneWidget);
+    });
+
+    testLargeWidgets('no buddy card once all four have arrived',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'user_progress': jsonEncode({'storiesCreated': 7}),
+      });
+      int requestCount = 0;
+      final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) {
+          return _authMock(request);
+        }
+        requestCount++;
+        return http.Response(
+          jsonEncode(requestCount == 1
+              ? PickAPathTestHelpers.createStartStoryResponseJson()
+              : PickAPathTestHelpers.createContinueStoryResponseJson(
+                  isCompleted: true,
+                  content: 'The adventure comes to an end.',
+                )),
+          200,
+        );
+      });
+      InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PickAPathAdventureScreen(
+            userId: 'test_user',
+            character: PickAPathTestHelpers.createTestCharacter(),
+            theme: 'Magic',
+            length: 'short',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Choice 1').first);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Adventure Complete'), findsOneWidget);
+      expect(find.byType(CompanionArrivalCard), findsNothing);
+    });
+
+    testLargeWidgets('a story that fails to start is not counted',
+        (tester) async {
+      final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) {
+          return _authMock(request);
+        }
+        return http.Response('Server error', 500);
+      });
+      InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PickAPathAdventureScreen(
+            userId: 'test_user',
+            character: PickAPathTestHelpers.createTestCharacter(),
+            theme: 'Magic',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect((await ProgressionService().getUserProgress()).storiesCreated, 0);
     });
   });
 

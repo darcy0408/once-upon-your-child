@@ -172,6 +172,20 @@ class ProgressionService {
     return newUnlocks;
   }
 
+  /// Count a story made somewhere other than the standard story page
+  /// (Pick a Path, Bedtime), so it moves the child toward the same unlocks.
+  /// Returns the new count, or null if it could not be saved. Best effort:
+  /// a failed write must never get in the way of the story.
+  static Future<int?> countStoryCreated(int age) async {
+    try {
+      final service = ProgressionService();
+      await service.incrementStoriesCreated(age);
+      return (await service.getUserProgress()).storiesCreated;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Record that a story was read
   Future<void> incrementStoriesRead() async {
     final progress = await getUserProgress();
