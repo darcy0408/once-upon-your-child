@@ -75,6 +75,14 @@ class CompanionUnlockService {
     return result;
   }
 
+  /// Count a Pick a Path or Bedtime story, and return the id of the magic
+  /// companion that story unlocked, or null if none arrived.
+  static Future<String?> countStoryAndFindArrival(int age) async {
+    final count = await ProgressionService.countStoryCreated(age);
+    if (count == null) return null;
+    return newlyUnlockedCompanionId(ageBandFromAge(age), count - 1, count);
+  }
+
   /// The live stories-created count: [ProgressionService]'s `storiesCreated`,
   /// the counter `_trackStoryCreation` actually increments.
   static Future<int> currentStoriesCreated({

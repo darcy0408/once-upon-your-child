@@ -13,10 +13,13 @@ import 'services/chronicle_service.dart';
 import 'services/isar_service.dart';
 import 'services/logger_service.dart';
 import 'services/offline_story_service.dart';
+import 'services/companion_unlock_service.dart';
 import 'theme/age_band_theme.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
 import 'widgets/app_card.dart';
+import 'widgets/companion_arrival_card.dart';
 import 'widgets/error_message.dart';
+import 'widgets/hero_creator/companion_widgets.dart' show CompanionData;
 import 'widgets/magical_loading_view.dart';
 import 'widgets/pick_a_path_app_bar.dart';
 import 'widgets/storybook_progress_indicator.dart';
@@ -97,6 +100,8 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   List<InventoryItemData> _inventory = [];
   StoryStateData? _state;
   bool _isCompleted = false;
+  // Id of a magic companion this story unlocked; shown on the ending page.
+  String? _arrivedCompanionId;
 
   bool _isLoading = true;
   bool _isContinuing = false;
@@ -303,6 +308,16 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
       }
 
       _chapterTextBuffer.write(_currentSegment?.content ?? '');
+
+      // A Pick a Path story counts toward unlocks like any other story.
+      // Counted here, once, when a new story starts; a resumed story does
+      // not come through this function. A buddy the story unlocked is
+      // announced on the ending page.
+      unawaited(CompanionUnlockService.countStoryAndFindArrival(
+        widget.character.age,
+      ).then((id) {
+        if (mounted && id != null) setState(() => _arrivedCompanionId = id);
+      }));
 
       unawaited(
         InteractiveStoryAnalytics.trackStoryStarted(
@@ -1756,6 +1771,11 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     );
   }
 
+  CompanionData? get _arrivedCompanion {
+    final id = _arrivedCompanionId;
+    return id == null ? null : companionForId(_bandTheme.band, id);
+  }
+
   Widget _buildCompletionSection() {
     final band = _bandTheme;
     final age = widget.character.age;
@@ -1808,6 +1828,14 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
               color: band.textOnDark),
           textAlign: TextAlign.center,
         ),
+        if (_arrivedCompanion != null) ...[
+          const SizedBox(height: 16),
+          CompanionArrivalCard(
+            companion: _arrivedCompanion!,
+            band: band,
+            onDismiss: () => setState(() => _arrivedCompanionId = null),
+          ),
+        ],
         const SizedBox(height: 24),
         if (!_storySaved) ...[
           AppButton.primary(
