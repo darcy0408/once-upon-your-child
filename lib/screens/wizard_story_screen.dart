@@ -376,18 +376,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
   }
 
   void _initializeFromCharacter(Character character) {
-    _wizardData.characterName = character.name;
-    _wizardData.characterAge = character.age;
-    _wizardData.selectedArchetypeId = character.role; // Best guess mapping
-    _wizardData.characterId = character.id;
-    _wizardData.generatedAvatar = character.generatedAvatar;
-    _wizardData.characterGender = character.gender ?? 'Girl';
-
-    // Map personality if available
-    if (character.personalitySliders != null) {
-      _wizardData.personalitySliders =
-          Map<String, int>.from(character.personalitySliders!);
-    }
+    // Same loader the hero chooser uses, so both fill the same fields.
+    _wizardData.loadHero(character);
 
     // Map appearance if available
     if (character.avatar != null) {
