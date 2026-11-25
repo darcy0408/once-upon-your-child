@@ -255,8 +255,15 @@ class _ChildProfileManagerScreenState
         backgroundColor: const Color(0xFF1E0A3C),
         title: const Text('Delete profile?',
             style: TextStyle(color: Colors.white)),
-        content: Text('Remove "${profile.name}"?',
-            style: const TextStyle(color: Colors.white70)),
+        content: SingleChildScrollView(
+          child: Text(
+            'This removes ${profile.name}\'s profile, the grown-up notes '
+            'saved for it, and its caregiver names.\n\n'
+            'Saved heroes and stories are kept. To delete everything for '
+            'every child, use "Delete all data" in Parent Controls.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -272,15 +279,14 @@ class _ChildProfileManagerScreenState
       ),
     );
     if (confirmed == true) {
-      final fullyDeleted = await _service.deleteProfile(profile.id);
+      final deleted = await _service.deleteProfile(profile.id);
       await _loadProfiles();
-      if (!fullyDeleted && mounted) {
+      if (!deleted && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              "Profile removed from this device, but we couldn't reach our "
-              "servers to delete the stored data. Please try again when "
-              "you're back online.",
+              "We couldn't finish deleting this profile, so it was not "
+              "deleted. Please try again.",
             ),
           ),
         );

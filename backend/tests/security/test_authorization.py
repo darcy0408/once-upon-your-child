@@ -195,10 +195,58 @@ def test_user_a_put_parent_hidden_context_does_not_modify_user_b_record(
         assert current_user_context.trigger == "a limit is set"
 
 
+def _hidden_context(user_id, profile_id):
+    return ParentHiddenContext(
+        user_id=user_id,
+        child_profile_id=profile_id,
+        feeling="sad",
+        trigger="a sibling conflict starts",
+        body_signal="a tight tummy",
+        coping_tool="a quiet pause",
+        repair_goal="say sorry simply",
+    )
+
+
+def test_delete_parent_hidden_context_removes_only_that_profile(
+    client, auth_headers, test_user, app, other_user
+):
+    with app.app_context():
+        db.session.add_all(
+            [
+                _hidden_context(test_user.id, "profile-a"),
+                _hidden_context(test_user.id, "profile-b"),
+                _hidden_context(other_user.id, "profile-a"),
+            ]
+        )
+        db.session.commit()
+
+    url = "/child-profiles/profile-a/parent-hidden-context"
+    response = client.delete(url, headers=auth_headers)
+    assert response.status_code == 200
+    assert response.get_json() == {"deleted": True}
+
+    with app.app_context():
+        remaining = {
+            (row.user_id, row.child_profile_id)
+            for row in ParentHiddenContext.query.all()
+        }
+        # The sibling's notes and the other family's notes are untouched.
+        assert remaining == {
+            (test_user.id, "profile-b"),
+            (other_user.id, "profile-a"),
+        }
+
+    # Safe to repeat: a parent retrying after a dropped connection gets 200.
+    again = client.delete(url, headers=auth_headers)
+    assert again.status_code == 200
+    assert again.get_json() == {"deleted": False}
+
+
 @pytest.mark.parametrize(
     ("method", "url", "kwargs"),
     [
         ("get", "/get-characters", {}),
+        ("delete", "/child-profiles/profile-1/parent-hidden-context", {}),
         ("get", "/characters/any-id", {}),
         ("put", "/characters/any-id", {"json": {"name": "NoAuth"}}),
         ("delete", "/characters/any-id", {}),

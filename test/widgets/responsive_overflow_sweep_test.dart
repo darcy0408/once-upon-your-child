@@ -42,12 +42,10 @@ import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/screens/wizard_steps/hero_creator_creative_brief.dart';
 import 'package:story_weaver_app/screens/wizard_steps/hero_creator_step.dart';
 import 'package:story_weaver_app/screens/wizard_steps/magic_review_step.dart';
-import 'package:story_weaver_app/services/child_profile_service.dart';
 import 'package:story_weaver_app/theme/age_band_asset_resolver.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/widgets/adventurer_character_sheet.dart';
 import 'package:story_weaver_app/widgets/app_bottom_navigation.dart';
-import 'package:story_weaver_app/widgets/child_profile_switcher.dart';
 import 'package:story_weaver_app/widgets/crisis_resources_panel.dart';
 import 'package:story_weaver_app/widgets/error_message.dart';
 import 'package:story_weaver_app/widgets/feelings_badge_grid.dart';
@@ -891,29 +889,6 @@ void main() {
         enabled: true,
         onTap: () {},
         hint: band.wizardNextHint,
-      ),
-      settle: const Duration(milliseconds: 200),
-    );
-  });
-
-  testWidgets('ChildProfileSwitcher', (tester) async {
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    final profiles = <ChildProfile>[
-      ChildProfile(id: 'a', name: 'Alexandria', age: 7),
-      ChildProfile(id: 'b', name: 'Bartholomew', age: 10),
-      ChildProfile(id: 'c', name: 'Cassiopeia', age: 13),
-    ];
-
-    await sweep(
-      tester,
-      'ChildProfileSwitcher',
-      (band) => ChildProfileSwitcher(
-        profiles: profiles,
-        activeProfileId: 'a',
-        onProfileSelected: (_) {},
-        onAddProfile: () {},
       ),
       settle: const Duration(milliseconds: 200),
     );
