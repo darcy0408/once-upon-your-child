@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_service_manager.dart';
+import 'caregiver_service.dart';
 import 'logger_service.dart';
 
 class ChildProfile {
@@ -85,45 +86,49 @@ class ChildProfileService {
         _profilesKey, profiles.map((p) => jsonEncode(p.toJson())).toList());
   }
 
-  /// Removes the local profile and requests server-side erasure of all data
-  /// for this user (COPPA right to erasure).
+  /// Deletes one child's profile: the profile itself, the grown-up notes saved
+  /// for it on the server, and its caregiver names. Saved heroes, stories and
+  /// the other children's profiles are left alone. Erasing the whole account
+  /// is a separate control in Parent Controls.
   ///
-  /// Returns `true` when the local profile was removed AND the backend either
-  /// erased the account or there was no server-side account to erase. Returns
-  /// `false` when the local profile was removed but the backend erasure call
-  /// failed (offline / 5xx) — the child's stories, consent and hidden context
-  /// may still exist on the server. Callers MUST surface a `false` result so
-  /// the parent knows the deletion was only partial and can retry, rather than
-  /// silently believing the data is fully gone.
+  /// The server step runs first. Returns `false`, with the profile still in
+  /// place, when that step fails (offline, 5xx, or the sign-in changed under
+  /// us), so the parent can try again. Callers MUST surface a `false` result.
   Future<bool> deleteProfile(String profileId) async {
+    try {
+      final api = ApiServiceManager();
+      // A device that never signed in has no notes on the server, and
+      // deleting a profile must not create an account as a side effect.
+      final accountId = await api.storedUserId();
+      if (accountId != null) {
+        await api.delete(
+          '/child-profiles/${Uri.encodeComponent(profileId)}'
+          '/parent-hidden-context',
+        );
+        // If the call was answered for a different account, the notes we
+        // meant to remove may still be there. Do not report success.
+        if (await api.storedUserId() != accountId) {
+          throw StateError('account changed during profile delete');
+        }
+      }
+    } catch (e) {
+      LoggerService.warning(
+        'ChildProfileService.deleteProfile: could not remove the server-side '
+        'notes for profile $profileId; profile kept so it can be retried',
+        e,
+      );
+      return false;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final profiles = await loadProfiles();
     profiles.removeWhere((p) => p.id == profileId);
     await prefs.setStringList(
         _profilesKey, profiles.map((p) => jsonEncode(p.toJson())).toList());
-    final active = await getActiveProfileId();
-    if (active == profileId) await prefs.remove(_activeKey);
-
-    // Delete all server-side data for this user (COPPA right to erasure).
-    try {
-      final api = ApiServiceManager();
-      final userId = await api.getUserId();
-      if (userId == null) {
-        // No server-side account was ever created — nothing to erase remotely.
-        return true;
-      }
-      await api.delete('/api/user/$userId/data');
-      return true;
-    } catch (e) {
-      // Do NOT swallow silently: a failed server erasure means the child's
-      // data may persist on the backend even though the local profile is gone.
-      // Log it and report failure so the caller can prompt a retry.
-      LoggerService.warning(
-        'ChildProfileService.deleteProfile: server-side erasure failed for '
-        'profile $profileId; local profile removed but backend data may remain',
-        e,
-      );
-      return false;
+    if (prefs.getString(_activeKey) == profileId) {
+      await prefs.remove(_activeKey);
     }
+    await CaregiverService().clear(profileId);
+    return true;
   }
 }

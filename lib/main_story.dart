@@ -48,7 +48,6 @@ import 'widgets/app_bottom_navigation.dart';
 import 'widgets/bedtime_launch_sheet.dart';
 import 'services/caregiver_service.dart';
 import 'services/child_profile_service.dart';
-import 'widgets/child_profile_switcher.dart';
 import 'settings_screen.dart' deferred as settings_screen;
 import 'screens/life_quest_screen.dart';
 import 'screens/adult_meditation_screen.dart';
@@ -304,9 +303,6 @@ class _StoryScreenState extends State<StoryScreen> {
     {'id': 'safe_space', 'emoji': '✨', 'label': 'Surprise Me'},
   ];
 
-  List<ChildProfile> _childProfiles = [];
-  String? _activeProfileId;
-
   List<Character> _characters = [];
   Character? _selectedCharacter;
 
@@ -421,7 +417,6 @@ class _StoryScreenState extends State<StoryScreen> {
   void initState() {
     super.initState();
     _loadUserId();
-    _loadProfiles();
     _loadCharacters();
     _loadSavedStories();
     _loadSubscriptionInfo();
@@ -432,18 +427,6 @@ class _StoryScreenState extends State<StoryScreen> {
   Future<void> _loadUserId() async {
     _userId = await UserIdentityService.getOrCreateUserId();
     setState(() {});
-  }
-
-  Future<void> _loadProfiles() async {
-    final service = ChildProfileService();
-    final profiles = await service.loadProfiles();
-    final activeId = await service.getActiveProfileId();
-    if (mounted) {
-      setState(() {
-        _childProfiles = profiles;
-        _activeProfileId = activeId;
-      });
-    }
   }
 
   void _handleInitialRoute() {
@@ -824,10 +807,6 @@ class _StoryScreenState extends State<StoryScreen> {
                   ],
                   _buildSELPacksSection(),
                   const SizedBox(height: 20),
-                  if (_childProfiles.length >= 2) ...[
-                    _buildProfileSwitcher(),
-                    const SizedBox(height: 16),
-                  ],
                   _buildCharacterPortraitRow(),
                   _buildJumpBackInRow(),
                   if (_selectedCharacter != null)
@@ -961,39 +940,6 @@ class _StoryScreenState extends State<StoryScreen> {
           );
         },
       ),
-    );
-  }
-
-  /// Renders the child profile switcher row when 2+ profiles exist.
-  Widget _buildProfileSwitcher() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'Switch profile',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.white70,
-            ),
-          ),
-        ),
-        ChildProfileSwitcher(
-          profiles: _childProfiles,
-          activeProfileId: _activeProfileId,
-          onProfileSelected: (profile) async {
-            final service = ChildProfileService();
-            await service.setActiveProfile(profile);
-            setState(() => _activeProfileId = profile.id);
-          },
-          onAddProfile: () {
-            Navigator.pushNamed(context, '/manage-profiles')
-                .then((_) => _loadProfiles());
-          },
-        ),
-      ],
     );
   }
 

@@ -298,4 +298,23 @@ def create_character_blueprint(limiter, logger):
         db.session.commit()
         return jsonify({"parent_hidden_context": context.to_dict()}), 200
 
+    @character_bp.route(
+        "/child-profiles/<string:profile_id>/parent-hidden-context",
+        methods=["DELETE"],
+    )
+    @require_auth
+    def delete_parent_hidden_context_endpoint(profile_id: str):
+        """Remove one child profile's grown-up notes, and nothing else.
+
+        Called when a parent deletes a single child profile. Safe to repeat:
+        answers 200 whether or not a row existed.
+        """
+        logger.info(f"DELETE /child-profiles/{profile_id}/parent-hidden-context called")
+        deleted = ParentHiddenContext.query.filter_by(
+            user_id=request.current_user.id,
+            child_profile_id=profile_id,
+        ).delete()
+        db.session.commit()
+        return jsonify({"deleted": bool(deleted)}), 200
+
     return character_bp

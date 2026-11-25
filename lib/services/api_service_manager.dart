@@ -279,6 +279,15 @@ class ApiServiceManager {
     }
   }
 
+  /// The user id this device last signed in with, or null if it never has.
+  /// Unlike [getUserId] this makes no network call and never creates an
+  /// account.
+  Future<String?> storedUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString(_userIdKey);
+    return (id == null || id.isEmpty) ? null : id;
+  }
+
   /// Get the current user ID
   Future<String?> getUserId() async {
     await _ensureAuthenticated();
