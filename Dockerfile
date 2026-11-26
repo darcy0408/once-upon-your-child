@@ -55,7 +55,12 @@ USER app
 EXPOSE 8080
 
 # Define the command to run the application.
-# Railway's startCommand in railway.toml is the canonical boot path and
-# overrides this CMD; the two are kept identical so local `docker run` behaves
-# the same. nixpacks.toml was removed (L-9) — the Docker build is authoritative.
-CMD gunicorn wsgi:app --bind 0.0.0.0:${PORT:-8080} --timeout 120 --workers 2
+# This CMD is the real boot command in production: Railway ignores the
+# startCommand in railway.toml and the backend service has no dashboard
+# override. nixpacks.toml was removed (L-9) — the Docker build is authoritative.
+#
+# gthread: /generate-story holds a request open for the whole sync wait (up to
+# 75s). With 2 sync workers, two stories in flight blocked every other request
+# (status polls, narration, new stories) until one finished. These requests
+# are I/O waits, so threads give 16 concurrent requests instead of 2.
+CMD gunicorn wsgi:app --bind 0.0.0.0:${PORT:-8080} --timeout 120 --workers 2 --worker-class gthread --threads 8
