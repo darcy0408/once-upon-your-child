@@ -752,7 +752,10 @@ class ApiServiceManager {
     // Sprout story that hits a validation/word-cap regen can run close to
     // that. Keep the client timeout above the backend ceiling so a slow but
     // successful generation still lands instead of being abandoned.
-    Duration requestTimeout = const Duration(seconds: 150),
+    // 480s: with Claude writing and then editing the story, a teen or adult
+    // story takes several minutes. The backend task limit is 600s, and giving
+    // up earlier starts a second, duplicate generation.
+    Duration requestTimeout = const Duration(seconds: 480),
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
     String storyLength = 'standard',

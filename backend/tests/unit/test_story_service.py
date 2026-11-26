@@ -1657,7 +1657,7 @@ class TestRealLifeEcho:
         )
         assert "change size" in block
         assert "repair beat" in block
-        assert "Milo feels it somewhere specific" in block
+        assert "what Milo does and where they feel it" in block
 
     def test_feelings_older_register_unchanged(self):
         from backend.services.story_service import _build_feelings_instruction
@@ -1666,7 +1666,7 @@ class TestRealLifeEcho:
             "Ana is frustrated", age=11, theme="Adventure", character="Ana"
         )
         assert "change size" not in block
-        assert "body clue immediately" in block
+        assert "Open inside a scene" in block
 
     # ---- problem stories (MT-482) ----------------------------------------
 

@@ -95,6 +95,7 @@ We do not provide end-to-end encryption. Story content and account data are proc
               content: '''
 We share only the minimum data required for each service to function. Each provider's own privacy policy governs its processing.
 
+- Anthropic (Claude) — AI story-text generation. Receives a pseudonymized hero token (a non-identifying name used in place of the child's real name), story details, themes, and any "big feelings" text the child shares. Does not receive photos.
 - OpenAI — AI story-text and character-avatar generation. Receives a pseudonymized hero token (a non-identifying name used in place of the child's real name), story details, themes, any "big feelings" text the child shares, image/avatar prompts, and — only on the photo-avatar path — the child's photo.
 - Cloudflare Workers AI — AI story-page illustrations (primary provider). Receives image prompts.
 - Replicate — AI image and avatar generation (fallback). Receives image prompts, and on the photo-avatar path the child's photo.

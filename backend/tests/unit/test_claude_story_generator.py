@@ -53,7 +53,8 @@ def _claude_response(content: str = _OK_STORY, stop_reason: str = "end_turn"):
 
 def _fake_client_returning(response) -> MagicMock:
     client = MagicMock()
-    client.messages.create.return_value = response
+    stream = client.messages.stream.return_value.__enter__.return_value
+    stream.get_final_message.return_value = response
     return client
 
 
@@ -91,7 +92,7 @@ class TestResolveClaudeTextModel:
     def test_default_models_are_bare_aliases_no_date_suffix(self):
         # Anthropic model IDs are bare aliases; a date suffix would 404.
         for model in (ANTHROPIC_PAID_MODEL, ANTHROPIC_FREE_MODEL):
-            assert model == "claude-haiku-4-5"
+            assert model == "claude-opus-5-5"
 
 
 # ---------------------------------------------------------------------------
@@ -202,10 +203,50 @@ class TestClaudeServiceModel:
 
     def test_generate_story_returns_sorry_on_server_error(self):
         client = MagicMock()
-        client.messages.create.side_effect = RuntimeError("boom")
+        client.messages.stream.side_effect = RuntimeError("boom")
         with patch.object(acg, "_make_anthropic_client", lambda api_key: client):
             out = ClaudeDirectStoryGenerator().generate_story("hi")
         assert out.startswith("Sorry")
+
+    def _client_with_replies(self, *responses):
+        client = MagicMock()
+        stream = client.messages.stream.return_value.__enter__.return_value
+        stream.get_final_message.side_effect = list(responses)
+        return client
+
+    def test_editor_pass_replaces_the_draft(self):
+        client = self._client_with_replies(
+            _claude_response("```json\n" + _OK_STORY + "\n```"),
+            _claude_response(_OK_STORY + " Edited."),
+        )
+        with patch.object(acg, "_make_anthropic_client", lambda api_key: client):
+            out = ClaudeDirectStoryGenerator().generate_story("hi", edit=True)
+        assert out == _OK_STORY + " Edited."
+        second_call = client.messages.stream.call_args_list[1].kwargs["messages"]
+        assert [m["role"] for m in second_call] == ["user", "assistant", "user"]
+        assert second_call[1]["content"] == _OK_STORY  # fence stripped
+
+    def test_editor_pass_failure_keeps_the_draft(self):
+        client = self._client_with_replies(
+            _claude_response(), RuntimeError("editor down")
+        )
+        with patch.object(acg, "_make_anthropic_client", lambda api_key: client):
+            out = ClaudeDirectStoryGenerator().generate_story("hi", edit=True)
+        assert out == _OK_STORY
+
+    def test_editor_pass_that_guts_the_story_keeps_the_draft(self):
+        client = self._client_with_replies(_claude_response(), _claude_response("x"))
+        with patch.object(acg, "_make_anthropic_client", lambda api_key: client):
+            out = ClaudeDirectStoryGenerator().generate_story("hi", edit=True)
+        assert out == _OK_STORY
+
+    def test_editor_pass_can_be_switched_off(self, monkeypatch):
+        monkeypatch.setenv("ANTHROPIC_EDITOR_PASS", "0")
+        client = self._client_with_replies(_claude_response())
+        with patch.object(acg, "_make_anthropic_client", lambda api_key: client):
+            out = ClaudeDirectStoryGenerator().generate_story("hi", edit=True)
+        assert out == _OK_STORY
+        assert client.messages.stream.call_count == 1
 
 
 # ---------------------------------------------------------------------------
@@ -246,7 +287,7 @@ class TestClaudeProviderFlagSequencing:
         """On a hard Claude failure the flag forbids Gemini — static is the only
         option, and Gemini must STILL not be called."""
         client = MagicMock()
-        client.messages.create.side_effect = RuntimeError("kaboom")
+        client.messages.stream.side_effect = RuntimeError("kaboom")
         monkeypatch.setattr(acg, "_make_anthropic_client", lambda api_key: client)
 
         text, provider, seq = story_tasks._generate_story_text_with_metadata(

@@ -484,7 +484,7 @@ def _try_claude(
     try:
         logger.info("Attempting story generation with Claude (direct)...")
         claude_generator = ClaudeDirectStoryGenerator(user_tier=user_tier)
-        story_text = claude_generator.generate_story(prompt)
+        story_text = claude_generator.generate_story(prompt, edit=True)
         if story_text and not story_text.startswith("Sorry"):
             logger.info("Successfully generated story with Claude (direct).")
             provider_sequence.append("claude(success)")
