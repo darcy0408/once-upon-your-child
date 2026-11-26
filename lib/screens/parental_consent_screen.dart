@@ -452,6 +452,9 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                                           ),
                                           const SizedBox(height: AppSpacing.xs),
                                           const Text(
+                                              '• Anthropic (Claude) — AI story-text generation. Receives a pseudonymized hero token, story details, themes, and any "big feelings" text shared. Does not receive photos.',
+                                              style: textWhite70),
+                                          const Text(
                                               '• OpenAI — AI story-text generation and character-avatar generation. Receives a pseudonymized hero token, story details, themes, any "big feelings" text shared, and image/avatar prompts; on the photo-avatar path, the child\'s photo.',
                                               style: textWhite70),
                                           const Text(

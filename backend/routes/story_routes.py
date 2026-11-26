@@ -322,11 +322,6 @@ def _build_feelings_prompt_text(
     if coping_tool and coping_tool not in coping_lines:
         coping_lines.insert(0, coping_tool)
 
-    feeling_label = _normalize_feeling_label(emotion_name) or emotion_name.lower()
-    opening_example = f"The hero felt so {feeling_label}."
-    if trigger:
-        opening_example = f"The hero felt so {feeling_label} when {trigger.lower()}."
-
     lines = [
         "BIG FEELINGS STORY SETUP:",
         f"- Feeling: {emotion_name}",
@@ -358,14 +353,14 @@ def _build_feelings_prompt_text(
                 "3. Honour the feeling without rushing to resolve it; complexity and contradiction are valid.",
                 "4. Show the body clue somatically and specifically — not as a diagram but as lived experience.",
                 "5. The coping gesture is a starting point, not a solution; it may land imperfectly or only partially help.",
-                "6. End with integration, not resolution — the feeling can still be present at the close; a character who has simply named and held something difficult is enough.",
+                "6. End with integration, not a tidy fix — the feeling can still be present at the close. But if it comes from a real problem (a hurt between two people, too much to carry), something practical about that problem must also change, however small.",
                 "7. Never moralise or summarise the emotional lesson. The story IS the lesson.",
             ]
         )
     else:
         lines.extend(
             [
-                f'1. Open by naming the feeling in the first lines, like: "{opening_example}"',
+                "1. Open with something happening. Show the feeling early in what the hero does, and say its name once in plain words.",
                 "2. Keep the problem child-sized and concrete.",
                 "3. Validate the feeling without shaming it or trying to erase it.",
                 "4. Show the body clue early and naturally.",

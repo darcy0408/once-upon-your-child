@@ -157,6 +157,7 @@ Once Upon YOUR Child uses the third-party service providers below. We share only
 
 | Provider | Data category received | Purpose |
 |---|---|---|
+| **Anthropic (Claude)** | A pseudonymized hero token (a non-identifying name used in place of the child's real name), story details, themes, any "big feelings" text the child shares. No photos | AI story-text generation |
 | **OpenAI** | A pseudonymized hero token (a non-identifying name used in place of the child's real name), story details, themes, any "big feelings" text the child shares, image/avatar prompts; on the photo-avatar path, the child's photo | AI story-text and character-avatar generation |
 | **Cloudflare Workers AI** | Image prompts | AI story-page illustrations — primary provider |
 | **Replicate** | Image prompts; on the photo-avatar path, the child's photo | AI image and avatar generation — fallback |

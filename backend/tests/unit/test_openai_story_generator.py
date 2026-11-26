@@ -103,7 +103,8 @@ def _claude_response(content: str = _OK_STORY, stop_reason: str = "end_turn"):
 
 def _fake_claude_client_returning(response) -> MagicMock:
     client = MagicMock()
-    client.messages.create.return_value = response
+    stream = client.messages.stream.return_value.__enter__.return_value
+    stream.get_final_message.return_value = response
     return client
 
 
@@ -641,7 +642,7 @@ class TestTieredProviderSequencing:
         openai_client = MagicMock()
         openai_client.chat.completions.create.side_effect = RuntimeError("down")
         claude_client = MagicMock()
-        claude_client.messages.create.side_effect = RuntimeError("down")
+        claude_client.messages.stream.side_effect = RuntimeError("down")
         monkeypatch.setattr(ocg, "_make_openai_client", lambda api_key: openai_client)
         monkeypatch.setattr(
             acg, "_make_anthropic_client", lambda api_key: claude_client
