@@ -163,6 +163,23 @@ class WizardDataMapper {
     final List<Map<String, dynamic>> adultPersonEntries = [];
 
     for (final companionName in companionNames) {
+      // A saved hero joining as a co-hero: send who they are so the story
+      // gives them pronouns, interests and a real part. Checked first, so a
+      // child who shares a name with a pet or a magical companion is still
+      // sent as a child (the backend hides a co-hero's real name).
+      final coHero = _coHeroProfile(data, companionName, nameToId);
+      if (coHero != null) {
+        companionsOther.add({
+          'name': companionName,
+          'is_co_hero': true,
+          if (coHero['age'] != null) 'age': coHero['age'],
+          if (coHero['gender'] != null) 'gender': coHero['gender'],
+          'interests': coHero['interests'] ?? const <String>[],
+          'strengths': coHero['strengths'] ?? const <String>[],
+        });
+        continue;
+      }
+
       // Check if this companion is one of the main character's pets
       final isPet = data.pets.any((pet) => pet['name'] == companionName);
 
@@ -840,6 +857,22 @@ class WizardDataMapper {
       }
     }
     return details;
+  }
+
+  /// The saved-hero details stored when [companionName] was picked as a buddy,
+  /// or null for anyone else. Profiles are keyed by character id; the name
+  /// kept inside each profile is the fallback when the id list is out of step.
+  static Map<String, dynamic>? _coHeroProfile(
+    WizardData data,
+    String companionName,
+    Map<String, String> nameToId,
+  ) {
+    final byId = data.coHeroProfiles[nameToId[companionName]];
+    if (byId != null) return byId;
+    for (final profile in data.coHeroProfiles.values) {
+      if (profile['name'] == companionName) return profile;
+    }
+    return null;
   }
 
   static CompanionData? _getCompanionData(String name) {

@@ -75,7 +75,7 @@ class PromptTemplate:
 TEMPLATES: tuple[PromptTemplate, ...] = (
     PromptTemplate(
         template_id="T1_STANDARD",
-        content_hash="40712c189c71a614",
+        content_hash="ad955ad223d47220",
         source_file="backend/services/story_service.py",
         anchors=("AdvancedStoryEngine.generate_enhanced_prompt",),
         mode="standard",
