@@ -112,6 +112,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   bool _isCreatingNew = true;
   GeneratedAvatar? _generatedAvatar;
   String? _customAvatarFilePath;
+
+  /// Set when the hero changes: the avatar generation in flight at that
+  /// moment (identified by its start time) belongs to the previous child.
+  bool _avatarIsStale = false;
+  DateTime? _staleAvatarStart;
   bool _isPremium = false;
 
   /// Stories this device has created so far (`ProgressionService`), loaded
@@ -386,6 +391,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   // ─── Avatar state listener ───────────────────────────────────────────────────
   void _onAvatarStateChanged() {
     final state = AvatarGenerationState();
+    // Ignore an avatar that was started before the hero changed: it belongs
+    // to the previous child. A generation started since then has a new start
+    // time and is accepted as usual.
+    if (_avatarIsStale && state.startTime == _staleAvatarStart) return;
+    _avatarIsStale = false;
     if (state.completedAvatar != null && _generatedAvatar == null) {
       if (mounted) {
         setState(() {
@@ -786,6 +796,23 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   // ─── Character helpers ────────────────────────────────────────────────────────
+
+  /// Clears what this widget holds about the previous child, to match
+  /// [WizardData.resetChildSpecific]. Call inside setState.
+  void _resetChildSpecificWidgetState() {
+    _generatedAvatar = null;
+    _customAvatarFilePath = null;
+    _superpowerController.clear();
+    _questController.clear();
+    _characterDesireController.clear();
+    _friendNameController.clear();
+    // An avatar still being drawn, or finished but not yet picked up, was
+    // started for the previous child. Remember it so it is never applied to
+    // this one.
+    _staleAvatarStart = AvatarGenerationState().startTime;
+    _avatarIsStale = true;
+  }
+
   void _loadExistingCharacter(Character character) {
     try {
       // Persist the rotating-hero pointer so next session can default the
@@ -805,31 +832,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       setState(() {
         _isCreatingNew = false;
         _selectedExistingCharacter = character;
-        widget.wizardData.characterId = character.id;
-        widget.wizardData.characterName = character.name;
-        widget.wizardData.characterAge = character.age;
-        widget.wizardData.characterGender = character.gender ?? 'Girl';
-        widget.wizardData.selectedArchetypeId = character.role;
+        // A different hero clears the previous child's details first; the
+        // same hero loaded again keeps the draft.
+        if (widget.wizardData.loadHero(character)) {
+          _resetChildSpecificWidgetState();
+        }
         _selectedArchetypeId = character.role;
         _nameController.text = character.name;
         _generatedAvatar = character.generatedAvatar;
-        widget.wizardData.generatedAvatar = character.generatedAvatar;
-        if (character.pets != null) {
-          final safePets = <Map<String, String>>[];
-          for (final p in character.pets!) {
-            try {
-              safePets.add(Map<String, String>.from(p));
-            } catch (_) {}
-          }
-          widget.wizardData.pets = safePets;
-        }
-        if (character.friends != null) {
-          widget.wizardData.additionalCharacters = [...character.friends!];
-        }
-        if (character.personalitySliders != null) {
-          widget.wizardData.personalitySliders =
-              Map<String, int>.from(character.personalitySliders!);
-        }
       });
     } catch (e, stack) {
       debugPrint('❌ Error loading character: $e\n$stack');
@@ -854,24 +864,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     setState(() {
       _isCreatingNew = true;
       _selectedExistingCharacter = null;
-      _generatedAvatar = null;
-      widget.wizardData.generatedAvatar = null;
+      // A new hero starts with nothing left over from the last child.
+      widget.wizardData.resetChildSpecific();
+      _resetChildSpecificWidgetState();
       widget.wizardData.characterId = null;
       widget.wizardData.characterName = '';
       widget.wizardData.characterAge = newAge;
+      widget.wizardData.selectedArchetypeId = null;
       _selectedArchetypeId = null;
       _nameController.clear();
-      widget.wizardData.pets = [];
-      widget.wizardData.additionalCharacters = [];
-      // Reset personality to defaults
-      widget.wizardData.personalitySliders = {
-        'energy': 50,
-        'sociability': 50,
-        'creativity': 50,
-        'confidence': 50,
-        'empathy': 50,
-        'adventurousness': 50,
-      };
     });
     if (ageChanged) widget.onAgeChanged?.call(newAge);
     _heroNextPage();

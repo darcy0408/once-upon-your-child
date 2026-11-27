@@ -1,3 +1,4 @@
+import '../models.dart' show Character;
 import '../models/generated_avatar.dart';
 
 /// WizardData - Collects all wizard selections
@@ -143,6 +144,97 @@ class WizardData {
 
   // Creator band (12-14): optional reflection prompt from character creation
   String? characterDesire; // e.g. "What does your character want more than anything?"
+
+  /// Returns everything that describes one particular child to its default,
+  /// so nothing carries over when the builder moves to a different hero.
+  ///
+  /// Left alone on purpose: what the story is about and how it is told
+  /// (scenario, life challenge, genre, length, rhyme / read-along / pick-a-path
+  /// modes, pictures, the free-text wish). Those can be chosen before the
+  /// hero, for example by a story pack that opens the builder.
+  ///
+  /// Name, age, gender, archetype and [characterId] are the caller's job.
+  void resetChildSpecific() {
+    final fresh = WizardData();
+    personalitySliders = fresh.personalitySliders;
+    favoriteColor = fresh.favoriteColor;
+    selectedHairStyle = fresh.selectedHairStyle;
+    selectedSkinTone = fresh.selectedSkinTone;
+    selectedOutfit = fresh.selectedOutfit;
+    generatedAvatar = null;
+    customAvatarPath = null;
+    selectedCharacterAssetPath = null;
+    fears = [];
+    strengths = [];
+    comfortItem = null;
+    pets = [];
+    petAvatars = {};
+    petPhotos = {};
+    additionalCharacters = [];
+    adultRelatives = [];
+    // How this child is feeling, and what a grown-up wrote about them.
+    selectedEmotionChips = [];
+    selectedFeeling = null;
+    selectedTrigger = null;
+    selectedBodySignal = null;
+    selectedCopingTool = null;
+    selectedRepairGoal = null;
+    parentHiddenContext = null;
+    parentalNote = null;
+    storyDnaContext = null;
+    storyDnaOutcome = null;
+    storyDnaAvoid = null;
+    // This child's team and the names they gave it.
+    selectedCompanions = [];
+    companionNames = [];
+    companionCustomNames = {};
+    // This child's hero identity.
+    heroSuperpower = null;
+    heroQuest = null;
+    heroCostumeColor = null;
+    heroCapeStyle = null;
+    heroEmblem = null;
+    heroPower = null;
+    heroCatchphrase = null;
+    heroSecret = null;
+    heroMode = null;
+    heroTell = null;
+    heroLine = null;
+    heroSeenBy = null;
+    heroPortraitUrl = null;
+    heroNemesisId = null;
+    characterDesire = null;
+  }
+
+  /// Points the builder at a saved hero. Returns true when this is a different
+  /// hero from the one already loaded, in which case the previous child's
+  /// details are cleared first. Loading the same hero again keeps the draft.
+  bool loadHero(Character character) {
+    final switched = characterId != character.id;
+    if (switched) resetChildSpecific();
+    characterId = character.id;
+    characterName = character.name;
+    characterAge = character.age;
+    characterGender = character.gender ?? 'Girl';
+    selectedArchetypeId = character.role;
+    generatedAvatar = character.generatedAvatar;
+    if (character.pets != null) {
+      final safePets = <Map<String, String>>[];
+      for (final p in character.pets!) {
+        try {
+          safePets.add(Map<String, String>.from(p));
+        } catch (_) {}
+      }
+      pets = safePets;
+    }
+    if (character.friends != null) {
+      additionalCharacters = [...character.friends!];
+    }
+    if (character.personalitySliders != null) {
+      personalitySliders = Map<String, int>.from(character.personalitySliders!);
+    }
+    return switched;
+  }
 
   /// Returns a deep copy of this WizardData.
   WizardData clone() {
