@@ -42,7 +42,7 @@ def test_block_carries_pronouns_interests_and_fair_share_rules():
     assert "loves: chess, bugs" in block
     assert "strengths: clever" in block
     assert "equals, never sidekicks" in block
-    assert "needed rescuing" in block
+    assert "the one to blame" in block
 
 
 def test_block_without_gender_forbids_pronouns():
@@ -181,3 +181,115 @@ def test_task_hides_the_co_heros_real_name_and_restores_it(app, mocker):
     assert hero in story["story_text"]
     assert "HERO_2" not in json.dumps(story)
     assert sibling in story["characters_featured"]
+
+
+def _run_task(app, mocker, *, hero, companions, custom="", body=None, meta=None):
+    """Run the task with a mocked provider. Returns (text sent, result)."""
+    body = body or f"{HERO_NAME_TOKEN} and HERO_2 crossed the whispering meadow. "
+    story = {
+        "title": f"{HERO_NAME_TOKEN} and HERO_2",
+        "pages": [{"text": body * 40}],
+        "themes": ["friendship"],
+        "characters_featured": [HERO_NAME_TOKEN, "HERO_2"],
+        "emotional_arc": "growth",
+    }
+    story.update(meta or {})
+    mocker.patch("backend.tasks.story_tasks.get_flask_app", return_value=app)
+    mocker.patch(
+        "backend.utils.content_moderator.moderate_story_content",
+        return_value=(True, ""),
+    )
+    generate = mocker.patch(
+        "backend.tasks.story_tasks._generate_story_text_with_metadata",
+        return_value=(json.dumps(story), "mock-provider", ["mock-provider"]),
+    )
+    result = generate_story_task.apply(
+        kwargs={
+            "character": hero,
+            "theme": "Adventure",
+            "user_id": "anonymous",
+            "age": 8,
+            "story_length": "standard",
+            "custom_elements": custom,
+            "companion_characters": companions,
+        }
+    ).get()
+    sent = " ".join(
+        str(a) for call in generate.call_args_list for a in (*call.args, call.kwargs)
+    )
+    return sent, result
+
+
+def _co(name, **extra):
+    return {"name": name, "is_co_hero": True, "age": 6, "gender": "girl", **extra}
+
+
+def test_a_co_hero_past_the_cap_is_never_sent_under_their_real_name(app, mocker):
+    names = ["Thistlequill", "Bramblewick", "Fernhollow", "Quillonby", "Marrowdew"]
+    sent, result = _run_task(
+        app,
+        mocker,
+        hero="Persephone-Marigold",
+        companions=[_co(n) for n in names],
+        custom="Quillonby and Marrowdew want to come too.",
+    )
+    assert result["status"] == "complete", result
+    for name in names:
+        assert name not in sent
+    assert "HERO_4 | age 6" in sent
+    assert "HERO_5 | age 6" not in sent
+
+
+def test_a_co_hero_with_the_heros_own_name_is_dropped_not_leaked(app, mocker):
+    sent, result = _run_task(
+        app,
+        mocker,
+        hero="Thistlequill",
+        companions=[_co("thistlequill")],
+        body=f"{HERO_NAME_TOKEN} crossed the whispering meadow alone. ",
+    )
+    assert result["status"] == "complete", result
+    assert "thistlequill" not in sent.lower()
+    assert "CO-HEROES" not in sent
+
+
+def test_a_co_hero_name_typed_in_lower_case_is_still_hidden(app, mocker):
+    sent, _ = _run_task(
+        app,
+        mocker,
+        hero="Persephone-Marigold",
+        companions=[_co("Thistlequill")],
+        custom="thistlequill should steer, and THISTLEQUILL should sing.",
+    )
+    assert "thistlequill" not in sent.lower()
+
+
+def test_a_short_name_never_eats_part_of_a_longer_one(app, mocker):
+    sent, result = _run_task(
+        app,
+        mocker,
+        hero="Persephone-Marigold",
+        companions=[_co("Quillo"), _co("Quillo-Marrowdew")],
+        custom="Quillo-Marrowdew brings the map and Quillo brings the rope.",
+        body=f"{HERO_NAME_TOKEN}, HERO_2 and HERO_3 crossed the meadow. ",
+    )
+    assert "Quillo" not in sent
+    assert "HERO_3 brings the map and HERO_2 brings the rope" in sent
+    text = result["story"]["story_text"]
+    assert "Quillo-Marrowdew" in text
+    assert "HERO_" not in text
+
+
+def test_names_are_restored_in_themes_and_arc_and_survive_quotes(app, mocker):
+    sibling = 'Thistle"quill'
+    _, result = _run_task(
+        app,
+        mocker,
+        hero="Persephone-Marigold",
+        companions=[_co(sibling)],
+        meta={"themes": ["HERO_2 is brave"], "emotional_arc": "HERO_2 grows"},
+    )
+    story = result["story"]
+    assert story["themes"] == [f"{sibling} is brave"]
+    assert story["emotional_arc"] == f"{sibling} grows"
+    assert "HERO_" not in json.dumps(story)

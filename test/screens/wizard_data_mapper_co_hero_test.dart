@@ -12,33 +12,36 @@ WizardData _hero() {
     ..characterGender = 'Girl';
 }
 
+const _leoCoHero = {
+  'name': 'Leo',
+  'is_co_hero': true,
+  'age': 5,
+  'gender': 'Boy',
+  'interests': ['trucks'],
+  'strengths': ['funny'],
+};
+
+Map<String, dynamic> _leoProfile() => {
+      'name': 'Leo',
+      'age': 5,
+      'gender': 'Boy',
+      'interests': ['trucks'],
+      'strengths': ['funny'],
+    };
+
 void main() {
   group('WizardDataMapper.mapToStoryRequest — co-heroes', () {
     test('a saved hero with a profile is sent as a co-hero with details', () {
       final wd = _hero()
         ..companionNames = ['Leo']
         ..selectedCompanions = ['char-leo']
-        ..coHeroProfiles = {
-          'Leo': {
-            'age': 5,
-            'gender': 'Boy',
-            'interests': ['trucks'],
-            'strengths': ['funny'],
-          },
-        };
+        ..coHeroProfiles = {'char-leo': _leoProfile()};
 
       final payload = WizardDataMapper.mapToStoryRequest(wd);
       final companions = payload['companion_characters'] as List;
 
       expect(companions, hasLength(1));
-      expect(companions.single, {
-        'name': 'Leo',
-        'is_co_hero': true,
-        'age': 5,
-        'gender': 'Boy',
-        'interests': ['trucks'],
-        'strengths': ['funny'],
-      });
+      expect(companions.single, _leoCoHero);
     });
 
     test('a friend with no profile is still sent as a plain name', () {
@@ -54,29 +57,48 @@ void main() {
     });
 
     test('a profile left behind after the friend is removed is not sent', () {
-      final wd = _hero()
-        ..coHeroProfiles = {
-          'Leo': {'age': 5},
-        };
+      final wd = _hero()..coHeroProfiles = {'char-leo': _leoProfile()};
 
       final payload = WizardDataMapper.mapToStoryRequest(wd);
 
       expect(payload['companion_characters'], isEmpty);
     });
 
-    test('profiles survive the wizard save and restore round trip', () {
+    test('a co-hero who shares a name with a pet is still sent as a child',
+        () {
       final wd = _hero()
-        ..coHeroProfiles = {
-          'Leo': {
-            'age': 5,
-            'interests': ['trucks'],
-          },
-        };
+        ..pets = [
+          {'name': 'Leo', 'type': 'Cat'},
+        ]
+        ..companionNames = ['Leo']
+        ..selectedCompanions = ['char-leo']
+        ..coHeroProfiles = {'char-leo': _leoProfile()};
+
+      final payload = WizardDataMapper.mapToStoryRequest(wd);
+
+      expect(payload['companion_characters'], [_leoCoHero]);
+    });
+
+    test('the profile is found by name when the id list is out of step', () {
+      final wd = _hero()
+        ..companionNames = ['Leo', 'Sam']
+        ..selectedCompanions = ['char-leo']
+        ..coHeroProfiles = {'char-leo': _leoProfile()};
+
+      final payload = WizardDataMapper.mapToStoryRequest(wd);
+      final companions = payload['companion_characters'] as List;
+
+      expect(companions.first, _leoCoHero);
+      expect(companions.last, {'name': 'Sam'});
+    });
+
+    test('profiles survive the wizard save and restore round trip', () {
+      final wd = _hero()..coHeroProfiles = {'char-leo': _leoProfile()};
 
       final restored = WizardData.fromJson(wd.toJson());
 
-      expect(restored.coHeroProfiles['Leo']?['age'], 5);
-      expect(restored.coHeroProfiles['Leo']?['interests'], ['trucks']);
+      expect(restored.coHeroProfiles['char-leo']?['age'], 5);
+      expect(restored.coHeroProfiles['char-leo']?['interests'], ['trucks']);
     });
   });
 }

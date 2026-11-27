@@ -38,6 +38,7 @@ from backend.services.story_generation_service import StoryGenerationService
 from backend.services.story_service import (
     AGE_CONSTRAINTS,
     CO_HERO_NAME_TOKEN_PREFIX,
+    HERO_NAME_TOKEN,
     MAX_CO_HEROES,
     AdvancedStoryEngine,
     _build_bedtime_prompt,
@@ -49,7 +50,6 @@ from backend.services.story_service import (
     build_bedtime_overlay,
     ltr_uses_limericks,
     pseudonymize_hero_name,
-    restore_hero_name,
 )
 from backend.services.superhero_validation import (
     backfill_saga_state,
@@ -1969,15 +1969,25 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 if not text:
                     return text
                 # Co-heroes (other real children in the story) get the same
-                # treatment. Case-sensitive, so a child called Will or Rose
-                # does not swallow the ordinary word.
-                for _co_real, _co_token in co_hero_tokens.items():
-                    text = re.sub(r"\b" + re.escape(_co_real) + r"\b", _co_token, text)
-                if not real_hero_name or not str(real_hero_name).strip():
+                # treatment as the hero. One pass, longest name first, any
+                # letter case: "Ann-Marie" is never half-eaten by "Ann", and a
+                # name typed in lower case is still hidden.
+                _lookup = {k.lower(): v for k, v in co_hero_tokens.items()}
+                _hero = str(real_hero_name or "").strip()
+                if _hero:
+                    _lookup[_hero.lower()] = character_name
+                if not _lookup:
                     return text
+                _pattern = (
+                    r"\b(?:"
+                    + "|".join(
+                        re.escape(n) for n in sorted(_lookup, key=len, reverse=True)
+                    )
+                    + r")\b"
+                )
                 return re.sub(
-                    r"\b" + re.escape(str(real_hero_name).strip()) + r"\b",
-                    character_name,
+                    _pattern,
+                    lambda m: _lookup.get(m.group(0).lower(), character_name),
                     text,
                     flags=re.IGNORECASE,
                 )
@@ -1988,11 +1998,35 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             co_hero_tokens: dict[str, str] = {}
 
             def _restore_names(text):
-                """Put the hero's and every co-hero's real name back, locally."""
-                text = restore_hero_name(text, real_hero_name)
-                for _co_real, _co_token in co_hero_tokens.items():
-                    text = restore_hero_name(text, _co_real, token=_co_token)
-                return text
+                """Put the hero's and every co-hero's real name back, locally.
+
+                One pass over whole tokens, so HERO_1 never matches inside
+                HERO_10 and a restored name is never read again as a token.
+                """
+                if not text:
+                    return text or ""
+                _names = {v.lower(): k for k, v in co_hero_tokens.items()}
+                _hero = str(real_hero_name or "").strip()
+                if _hero:
+                    _names[HERO_NAME_TOKEN.lower()] = _hero
+                if not _names:
+                    return text
+                return re.sub(
+                    re.escape(CO_HERO_NAME_TOKEN_PREFIX) + r"\d+",
+                    lambda m: _names.get(m.group(0).lower(), m.group(0)),
+                    text,
+                    flags=re.IGNORECASE,
+                )
+
+            def _restore_names_deep(obj):
+                """_restore_names over nested model output (lists, dicts)."""
+                if isinstance(obj, str):
+                    return _restore_names(obj)
+                if isinstance(obj, list):
+                    return [_restore_names_deep(v) for v in obj]
+                if isinstance(obj, dict):
+                    return {k: _restore_names_deep(v) for k, v in obj.items()}
+                return obj
 
             try:
                 self.update_state(
@@ -2038,24 +2072,31 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # M-7 for co-heroes: a sibling or friend who shares the story is a
             # real child too, and now travels with an age, a gender and
             # interests. Swap each name for a token before any provider call.
+            # No co-hero entry is ever passed on under its real name: it is
+            # either tokenised or dropped. Dropped: one with no name, the hero
+            # listed again, a repeat of the same name, and any past the cap
+            # (those still get a token so free text mentioning them is hidden).
             _tokenized_details = []
+            _hero_key = str(real_hero_name or "").strip().lower()
+            _co_keys: set[str] = set()
             for _cd in companion_character_details:
-                _co_name = (
-                    str(_cd.get("name") or "").strip() if isinstance(_cd, dict) else ""
-                )
+                if not (isinstance(_cd, dict) and _cd.get("is_co_hero")):
+                    _tokenized_details.append(_cd)
+                    continue
+                _co_name = str(_cd.get("name") or "").strip()
+                _co_key = _co_name.lower()
                 if (
-                    isinstance(_cd, dict)
-                    and _cd.get("is_co_hero")
-                    and _co_name
-                    and _co_name.lower() != str(real_hero_name or "").strip().lower()
-                    and len(co_hero_tokens) < MAX_CO_HEROES
+                    not _co_name
+                    or _co_key == _hero_key
+                    or _co_key in _co_keys
+                    or len(_co_keys) >= MAX_CO_HEROES * 4
                 ):
-                    _token = co_hero_tokens.setdefault(
-                        _co_name,
-                        f"{CO_HERO_NAME_TOKEN_PREFIX}{len(co_hero_tokens) + 2}",
-                    )
-                    _cd = {**_cd, "name": _token}
-                _tokenized_details.append(_cd)
+                    continue
+                _co_keys.add(_co_key)
+                _token = f"{CO_HERO_NAME_TOKEN_PREFIX}{len(_co_keys) + 1}"
+                co_hero_tokens[_co_name] = _token
+                if len(_co_keys) <= MAX_CO_HEROES:
+                    _tokenized_details.append({**_cd, "name": _token})
             companion_character_details = _tokenized_details
 
             engine = AdvancedStoryEngine()
@@ -3222,11 +3263,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             title = _restore_names(title)
             story_body = _restore_names(story_body)
             pages = [_restore_names(p) for p in pages]
-            _characters = [_restore_names(c) for c in _characters]
-            try:
-                post_story = json.loads(_restore_names(json.dumps(post_story)))
-            except (TypeError, ValueError):
-                pass
+            _characters = _restore_names_deep(_characters)
+            _themes = _restore_names_deep(_themes)
+            _arc = _restore_names_deep(_arc)
+            post_story = _restore_names_deep(post_story)
 
             story_payload = {
                 "id": story_id,
@@ -3276,12 +3316,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 except NameError:
                     _saga_state = None
                 if isinstance(_saga_state, dict) and _saga_state:
-                    try:
-                        _saga_state = json.loads(
-                            _restore_names(json.dumps(_saga_state))
-                        )
-                    except (TypeError, ValueError):
-                        pass
+                    _saga_state = _restore_names_deep(_saga_state)
                     # Egress scrub: saga_state is free model text that reaches the
                     # child AND round-trips into the next Issue as prior_saga —
                     # strip any injected link (mirrors run_antihero_part2 / F-4).
@@ -3329,7 +3364,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     )
                     db.session.commit()
                     # MT-364: `_characters` (characters_featured) has already
-                    # been through restore_hero_name() above, so it carries
+                    # been through _restore_names() above, so it carries
                     # the child's real name (and any companion real names) —
                     # log a count, never the list itself. `_themes`/`_arc` are
                     # story-metadata labels, not PII.
