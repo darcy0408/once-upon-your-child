@@ -37,6 +37,8 @@ from backend.services.scene_residents import (
 from backend.services.story_generation_service import StoryGenerationService
 from backend.services.story_service import (
     AGE_CONSTRAINTS,
+    CO_HERO_NAME_TOKEN_PREFIX,
+    MAX_CO_HEROES,
     AdvancedStoryEngine,
     _build_bedtime_prompt,
     _build_learning_to_read_prompt,
@@ -1964,7 +1966,14 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 """Replace stray real-name occurrences (from character_details,
                 feelings_prompt, the prior-adventures recall block, etc.) with
                 the token so the assembled prompt never carries the real name."""
-                if not text or not real_hero_name or not str(real_hero_name).strip():
+                if not text:
+                    return text
+                # Co-heroes (other real children in the story) get the same
+                # treatment. Case-sensitive, so a child called Will or Rose
+                # does not swallow the ordinary word.
+                for _co_real, _co_token in co_hero_tokens.items():
+                    text = re.sub(r"\b" + re.escape(_co_real) + r"\b", _co_token, text)
+                if not real_hero_name or not str(real_hero_name).strip():
                     return text
                 return re.sub(
                     r"\b" + re.escape(str(real_hero_name).strip()) + r"\b",
@@ -1972,6 +1981,18 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     text,
                     flags=re.IGNORECASE,
                 )
+
+            # real first name -> HERO_2, HERO_3... Filled below once the
+            # companion list is resolved; read by _scrub_real_name above and
+            # _restore_names below.
+            co_hero_tokens: dict[str, str] = {}
+
+            def _restore_names(text):
+                """Put the hero's and every co-hero's real name back, locally."""
+                text = restore_hero_name(text, real_hero_name)
+                for _co_real, _co_token in co_hero_tokens.items():
+                    text = restore_hero_name(text, _co_real, token=_co_token)
+                return text
 
             try:
                 self.update_state(
@@ -2013,6 +2034,29 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                                 "Companion character not found in database"
                             )
                             companion_character_details.append({"name": str(char_data)})
+
+            # M-7 for co-heroes: a sibling or friend who shares the story is a
+            # real child too, and now travels with an age, a gender and
+            # interests. Swap each name for a token before any provider call.
+            _tokenized_details = []
+            for _cd in companion_character_details:
+                _co_name = (
+                    str(_cd.get("name") or "").strip() if isinstance(_cd, dict) else ""
+                )
+                if (
+                    isinstance(_cd, dict)
+                    and _cd.get("is_co_hero")
+                    and _co_name
+                    and _co_name.lower() != str(real_hero_name or "").strip().lower()
+                    and len(co_hero_tokens) < MAX_CO_HEROES
+                ):
+                    _token = co_hero_tokens.setdefault(
+                        _co_name,
+                        f"{CO_HERO_NAME_TOKEN_PREFIX}{len(co_hero_tokens) + 2}",
+                    )
+                    _cd = {**_cd, "name": _token}
+                _tokenized_details.append(_cd)
+            companion_character_details = _tokenized_details
 
             engine = AdvancedStoryEngine()
 
@@ -3175,14 +3219,12 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # locally — the child sees their own name even though every provider
             # only ever saw the HERO_1 token. Stored Story rows also carry the
             # real name (consistent with the interactive path).
-            title = restore_hero_name(title, real_hero_name)
-            story_body = restore_hero_name(story_body, real_hero_name)
-            pages = [restore_hero_name(p, real_hero_name) for p in pages]
-            _characters = [restore_hero_name(c, real_hero_name) for c in _characters]
+            title = _restore_names(title)
+            story_body = _restore_names(story_body)
+            pages = [_restore_names(p) for p in pages]
+            _characters = [_restore_names(c) for c in _characters]
             try:
-                post_story = json.loads(
-                    restore_hero_name(json.dumps(post_story), real_hero_name)
-                )
+                post_story = json.loads(_restore_names(json.dumps(post_story)))
             except (TypeError, ValueError):
                 pass
 
@@ -3236,7 +3278,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 if isinstance(_saga_state, dict) and _saga_state:
                     try:
                         _saga_state = json.loads(
-                            restore_hero_name(json.dumps(_saga_state), real_hero_name)
+                            _restore_names(json.dumps(_saga_state))
                         )
                     except (TypeError, ValueError):
                         pass

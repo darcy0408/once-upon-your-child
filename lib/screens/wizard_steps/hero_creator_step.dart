@@ -2288,9 +2288,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   if (isSelected) {
                     widget.wizardData.companionNames.remove(c.name);
                     widget.wizardData.selectedCompanions.remove(c.id);
+                    widget.wizardData.coHeroProfiles.remove(c.name);
                   } else {
                     widget.wizardData.companionNames.add(c.name);
                     widget.wizardData.selectedCompanions.add(c.id);
+                    widget.wizardData.coHeroProfiles[c.name] = {
+                      'age': c.age,
+                      if (c.gender != null) 'gender': c.gender,
+                      'interests': c.likes ?? const <String>[],
+                      'strengths': c.strengths ?? const <String>[],
+                    };
                   }
                 }),
               );

@@ -38,6 +38,11 @@ class WizardData {
   Map<String, String> petPhotos = {}; // Real pet photos: name → base64 jpeg
   List<String> additionalCharacters = [];
 
+  /// Saved heroes (siblings, friends) who join this story as co-heroes,
+  /// keyed by name: age, gender, interests, strengths. Lets the story treat
+  /// them as real children with their own part, not a bare name.
+  Map<String, Map<String, dynamic>> coHeroProfiles = {};
+
   /// Adult relatives in the story — Premium "whole family" tier.
   /// Each entry: {'name': 'Sarah', 'relation': 'mom'|'dad'|'grandma'|...}.
   /// Treated as supportive adult presence in the prompt — not peers, not villains.
@@ -167,6 +172,8 @@ class WizardData {
     c.petAvatars = Map.from(petAvatars);
     c.petPhotos = Map<String, String>.from(petPhotos);
     c.additionalCharacters = List<String>.from(additionalCharacters);
+    c.coHeroProfiles = coHeroProfiles
+        .map((k, v) => MapEntry(k, Map<String, dynamic>.from(v)));
     c.adultRelatives = adultRelatives.map((r) => Map<String, String>.from(r)).toList();
     c.selectedScenario = selectedScenario;
     c.selectedEmotionChips = List<String>.from(selectedEmotionChips);
@@ -257,6 +264,7 @@ class WizardData {
       'petAvatars':
           petAvatars.map((key, value) => MapEntry(key, value.toJson())),
       'additionalCharacters': additionalCharacters,
+      'coHeroProfiles': coHeroProfiles,
       'adultRelatives': adultRelatives,
       'scenario': selectedScenario,
       'emotions': selectedEmotionChips,
@@ -337,6 +345,9 @@ class WizardData {
         .toList();
     d.additionalCharacters =
         List<String>.from((json['additionalCharacters'] as List?) ?? []);
+    d.coHeroProfiles = ((json['coHeroProfiles'] as Map?) ?? const {}).map(
+      (k, v) => MapEntry(k.toString(), Map<String, dynamic>.from(v as Map)),
+    );
     d.adultRelatives = ((json['adultRelatives'] as List?) ?? [])
         .map((r) => Map<String, String>.from(r as Map))
         .toList();

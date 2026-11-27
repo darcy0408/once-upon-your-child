@@ -1264,6 +1264,84 @@ def restore_hero_name(
 
 
 # ============================================================================
+# Co-heroes: other real children (siblings, friends) sharing the story
+# ============================================================================
+# The app sends a saved hero who joins another child's story as a
+# companion_characters entry flagged `is_co_hero`, with their own age, gender,
+# interests and strengths. Without this block they reached the model as a bare
+# name: no pronouns, nothing they love, and a sidekick's part.
+CO_HERO_NAME_TOKEN_PREFIX = "HERO_"
+MAX_CO_HEROES = 3
+_CO_HERO_PRONOUNS = {
+    "girl": "she/her",
+    "female": "she/her",
+    "boy": "he/him",
+    "male": "he/him",
+}
+
+
+def _co_hero_text(value, max_len: int = 40) -> str:
+    """One short, single-line, prompt-safe value from client-supplied data."""
+    text = re.sub(r"[\r\n\t|`<>{}\[\]]+", " ", str(value or "")).strip()
+    return re.sub(r"\s{2,}", " ", text)[:max_len].strip()
+
+
+def _co_hero_list(value, max_items: int = 4) -> list[str]:
+    if not isinstance(value, (list, tuple)):
+        return []
+    items = [_co_hero_text(v) for v in value]
+    return [i for i in items if i][:max_items]
+
+
+def build_co_hero_block(character: str, co_heroes: list[dict]) -> str:
+    """Prompt section for the other children who share the story as equals."""
+    lines = []
+    for c in co_heroes[:MAX_CO_HEROES]:
+        name = _co_hero_text(c.get("name"), 30)
+        if not name:
+            continue
+        parts = [name]
+        try:
+            age = int(c.get("age"))
+        except (TypeError, ValueError):
+            age = 0
+        if 1 <= age <= 120:
+            parts.append(f"age {age}")
+        gender = _co_hero_text(c.get("gender"), 12).lower()
+        pronouns = _CO_HERO_PRONOUNS.get(gender)
+        if pronouns:
+            parts.append(f"{gender} ({pronouns})")
+        else:
+            parts.append("gender not given: use the name, never a pronoun")
+        interests = _co_hero_list(c.get("interests"))
+        if interests:
+            parts.append("loves: " + ", ".join(interests))
+        strengths = _co_hero_list(c.get("strengths"))
+        if strengths:
+            parts.append("strengths: " + ", ".join(strengths))
+        lines.append("  " + " | ".join(parts))
+    if not lines:
+        return ""
+    return (
+        f"CO-HEROES (real children sharing this story with {character}; "
+        "equals, never sidekicks):\n" + "\n".join(lines) + "\n  How to write them:\n"
+        f"  - {character} stays the point-of-view hero, but this is a story about "
+        "all of them together.\n"
+        "  - Each co-hero makes at least one choice of their own that changes what "
+        "happens, using something they love or are good at. Where another rule "
+        "asks for a companion to act at the climax, a co-hero's choice counts.\n"
+        "  - Share the page fairly: each one speaks, and each name appears about "
+        "as often as the others.\n"
+        "  - No child is the one who caused the trouble, the one who was wrong, or "
+        "the one who needed rescuing while the others did not. These children "
+        "will read this side by side.\n"
+        "  - Each acts their own age. A younger child is not a baby and an older "
+        "one is not a parent.\n"
+        "  - Write each name exactly as given."
+    )
+
+
+# ============================================================================
 # Prior-adventures recall
 # ============================================================================
 # How many recent stories to scan when assembling a character's prior-themes
@@ -1475,6 +1553,17 @@ class AdvancedStoryEngine:
                 )
                 all_companion_names.append(p["name"])
             companion_sections.append(f"PETS: {', '.join(pets)}")
+        co_heroes = [
+            c
+            for c in (companion_characters or [])
+            if isinstance(c, dict) and c.get("is_co_hero") and c.get("name")
+        ]
+        if co_heroes:
+            companion_characters = [
+                c for c in companion_characters if c not in co_heroes
+            ]
+            companion_sections.append(build_co_hero_block(character, co_heroes))
+            all_companion_names.extend(str(c["name"]) for c in co_heroes)
         if companion_characters:
             chars = []
             behavior_instructions = []

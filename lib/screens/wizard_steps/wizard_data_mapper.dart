@@ -238,6 +238,18 @@ class WizardDataMapper {
               'powerConstraint': bandPowerConstraint,
             if (bandSensoryTell != null) 'sensoryTell': bandSensoryTell,
           });
+        } else if (data.coHeroProfiles[companionName] != null) {
+          // A saved hero joining as a co-hero: send who they are so the
+          // story gives them pronouns, interests and a real part.
+          final profile = data.coHeroProfiles[companionName]!;
+          companionsOther.add({
+            'name': displayName,
+            'is_co_hero': true,
+            if (profile['age'] != null) 'age': profile['age'],
+            if (profile['gender'] != null) 'gender': profile['gender'],
+            'interests': profile['interests'] ?? const <String>[],
+            'strengths': profile['strengths'] ?? const <String>[],
+          });
         } else {
           // Standard friend/sibling — no special data.
           companionsOther.add({'name': displayName});
