@@ -40,6 +40,9 @@ from backend.services.story_service import (
     CO_HERO_NAME_TOKEN_PREFIX,
     HERO_NAME_TOKEN,
     MAX_CO_HEROES,
+    MAX_PERSON_TOKENS,
+    NAME_TOKEN_NOTE,
+    PERSON_NAME_TOKEN_PREFIX,
     AdvancedStoryEngine,
     _build_bedtime_prompt,
     _build_learning_to_read_prompt,
@@ -50,6 +53,9 @@ from backend.services.story_service import (
     build_bedtime_overlay,
     ltr_uses_limericks,
     pseudonymize_hero_name,
+    restore_names,
+    scrub_names,
+    split_person_name,
 )
 from backend.services.superhero_validation import (
     backfill_saga_state,
@@ -1968,34 +1974,20 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 the token so the assembled prompt never carries the real name."""
                 if not text:
                     return text
-                # Co-heroes (other real children in the story) get the same
-                # treatment as the hero. One pass, longest name first, any
-                # letter case: "Ann-Marie" is never half-eaten by "Ann", and a
-                # name typed in lower case is still hidden.
-                _lookup = {k.lower(): v for k, v in co_hero_tokens.items()}
+                # Co-heroes (other real children in the story) and typed-in
+                # people get the same treatment as the hero, in one pass.
+                _lookup = {**person_tokens, **co_hero_tokens}
                 _hero = str(real_hero_name or "").strip()
                 if _hero:
-                    _lookup[_hero.lower()] = character_name
-                if not _lookup:
-                    return text
-                _pattern = (
-                    r"\b(?:"
-                    + "|".join(
-                        re.escape(n) for n in sorted(_lookup, key=len, reverse=True)
-                    )
-                    + r")\b"
-                )
-                return re.sub(
-                    _pattern,
-                    lambda m: _lookup.get(m.group(0).lower(), character_name),
-                    text,
-                    flags=re.IGNORECASE,
-                )
+                    _lookup[_hero] = character_name
+                return scrub_names(text, _lookup)
 
             # real first name -> HERO_2, HERO_3... Filled below once the
             # companion list is resolved; read by _scrub_real_name above and
             # _restore_names below.
             co_hero_tokens: dict[str, str] = {}
+            # typed-in friend / cousin / grown-up name -> PERSON_1, PERSON_2...
+            person_tokens: dict[str, str] = {}
 
             def _restore_names(text):
                 """Put the hero's and every co-hero's real name back, locally.
@@ -2003,20 +1995,12 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 One pass over whole tokens, so HERO_1 never matches inside
                 HERO_10 and a restored name is never read again as a token.
                 """
-                if not text:
-                    return text or ""
                 _names = {v.lower(): k for k, v in co_hero_tokens.items()}
+                _names.update({v.lower(): k for k, v in person_tokens.items()})
                 _hero = str(real_hero_name or "").strip()
                 if _hero:
                     _names[HERO_NAME_TOKEN.lower()] = _hero
-                if not _names:
-                    return text
-                return re.sub(
-                    re.escape(CO_HERO_NAME_TOKEN_PREFIX) + r"\d+",
-                    lambda m: _names.get(m.group(0).lower(), m.group(0)),
-                    text,
-                    flags=re.IGNORECASE,
-                )
+                return restore_names(text, _names)
 
             def _restore_names_deep(obj):
                 """_restore_names over nested model output (lists, dicts)."""
@@ -2098,6 +2082,45 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 if len(_co_keys) <= MAX_CO_HEROES:
                     _tokenized_details.append({**_cd, "name": _token})
             companion_character_details = _tokenized_details
+
+            # Typed-in people. Every prompt builder below is fed the names as
+            # typed; the boundary scrub after the builders swaps them, so one
+            # registry covers the standard, bedtime, rhyme and reading prompts.
+            # Named creatures the app ships (they carry a description or a
+            # behaviour pattern) are not people and keep their names.
+            _typed_people: list = []
+            for _cd in companion_character_details:
+                if (
+                    isinstance(_cd, dict)
+                    and not _cd.get("is_co_hero")
+                    and not _cd.get("description")
+                    and not _cd.get("behaviorPattern")
+                    and not _cd.get("signaturePower")
+                ):
+                    _typed_people.append(_cd.get("name"))
+            for _source in (
+                kwargs.get("additional_characters"),
+                char_details.get("additionalCharacters"),
+                char_details.get("adultRelatives"),
+                char_details.get("friends"),
+                char_details.get("siblings"),
+            ):
+                if isinstance(_source, (list, tuple)):
+                    for _entry in _source:
+                        _typed_people.append(
+                            _entry.get("name") if isinstance(_entry, dict) else _entry
+                        )
+            _taken = {_hero_key} | {k.lower() for k in co_hero_tokens}
+            for _typed in _typed_people:
+                if len(person_tokens) >= MAX_PERSON_TOKENS:
+                    break
+                _private = split_person_name(_typed)[1][:60].strip()
+                if not _private or _private.lower() in _taken:
+                    continue
+                _taken.add(_private.lower())
+                person_tokens[_private] = (
+                    f"{PERSON_NAME_TOKEN_PREFIX}{len(person_tokens) + 1}"
+                )
 
             engine = AdvancedStoryEngine()
 
@@ -2353,6 +2376,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
             # M-7: final boundary scrub before the prompt leaves for any provider.
             prompt = _scrub_real_name(prompt)
+            if person_tokens:
+                prompt += NAME_TOKEN_NOTE
 
             # F-01 (MT-187): resolve the template id + live revision hash so we
             # can persist them on the Story row. Derived from the same mode
@@ -2407,6 +2432,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     name = ec.get("name") if isinstance(ec, dict) else str(ec)
                     if name:
                         mandatory_names.append(name)
+
+            # The model only ever saw tokens, so check for (and, on a retry,
+            # ask for) the tokens. Real names must not reach the retry notes.
+            mandatory_names = [_scrub_real_name(str(n)) for n in mandatory_names]
 
             # MT-364: mandatory_names is real child/companion PII (only the
             # first entry, character_name, is the pseudonym token — every
