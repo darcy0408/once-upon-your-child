@@ -1343,6 +1343,120 @@ def build_co_hero_block(character: str, co_heroes: list[dict]) -> str:
 
 
 # ============================================================================
+# Typed-in people: friends, cousins and grown-ups named by the family
+# ============================================================================
+# A name typed into the wizard is a real person too, often someone else's
+# child. Each one is swapped for PERSON_1, PERSON_2... before any provider call
+# and put back locally, the same way the hero and co-heroes are.
+PERSON_NAME_TOKEN_PREFIX = "PERSON_"
+MAX_PERSON_TOKENS = 12
+NAME_TOKEN_RE = re.compile(r"(?<![A-Za-z0-9])(?:HERO|PERSON)_\d+", re.IGNORECASE)
+NAME_TOKEN_NOTE = (
+    "\n\nNAMES: every HERO_ and PERSON_ label with a number stands in for a "
+    "real first name. Write each one exactly as given, wherever you would "
+    "write that person's name."
+)
+
+# What a family calls a grown-up. Sent as typed: "Grandma" names nobody, and
+# the story reads better when the model knows who this is.
+_KIN_WORDS = frozenset("""
+    mom mommy mum mummy mama momma mother dad daddy dada papa pop pops father
+    grandma grandpa granny gran grandmother grandfather nana nanna nan nonna
+    nonno oma opa abuela abuelo abuelita abuelito gram grams gramps grammy
+    grandad granddad grampa gramma meemaw mimi gigi pawpaw papaw bubbe zayde
+    lola lolo yaya aunt auntie aunty uncle tia tio cousin brother sister
+    stepmom stepdad godmother godfather teacher coach mr mrs ms miss dr the
+    my our baby big little
+    """.split())
+
+# First names that are also everyday words. The prompt's own instructions use
+# these words ("the story will...", "may", "max"), so for these names only the
+# spelling as typed and its Capitalised form are swapped. Every other name is
+# swapped in any letter case.
+_EVERYDAY_WORD_NAMES = frozenset("""
+    will may max mark rose grace joy hope faith art bill pat rich sky summer
+    june april august dawn iris ivy lily daisy angel chase hunter mason miles
+    penny ray rob sue jack hazel olive violet amber ruby pearl crystal jade
+    holly heather robin reed brook cliff dale glen lane wade drew frank ernest
+    noble king prince page bishop baker cooper carter piper harper sage sunny
+    star storm river rain snow winter autumn spring west north christian
+    destiny harmony melody charity patience victor guy don gene herb basil
+    rusty sandy rocky buddy queen love an al ed so bo mo jo kit nick peg bob
+    dot tad ted sunny honey candy ginger pepper misty stormy lucky happy
+    merry bonny rusty jasper flint gray grey brown white black green blue
+    red rusty forest ocean lake meadow willow ash aspen birch cedar fern
+    clay stone rock cole coal wren lark dove finn fox wolf bear colt buck
+    hero story page reader read rhyme chance justice honor honour true
+    liberty journey haven eden gem jewel opal coral dusty earl duke baron
+    major judge rip skip chip flip trip tip dash rush gale breeze cloud sunny
+    brave bright wise kind sweet dear dolly teddy
+    """.split())
+
+
+def split_person_name(value) -> tuple[str, str]:
+    """Split a typed person into (kin words kept as typed, the private name).
+
+    "Aunt Rosa" -> ("Aunt", "Rosa"); "Grandma" -> ("Grandma", ""); "Sam" ->
+    ("", "Sam"). Only leading kin words are peeled off.
+    """
+    words = str(value or "").split()
+    lead = []
+    while words and words[0].strip(".,").lower() in _KIN_WORDS:
+        lead.append(words.pop(0))
+    return " ".join(lead), " ".join(words)
+
+
+def scrub_names(text, name_to_token: dict) -> str:
+    """Replace every real name in *text* with its token, in one pass.
+
+    Longest name first, so "Ann-Marie" is never half-eaten by "Ann". Names in
+    any letter case, except names that are also everyday words (see
+    ``_EVERYDAY_WORD_NAMES``) and one- or two-letter names, which match only
+    as typed or Capitalised so they do not swallow the prompt's own words.
+    """
+    if not text or not name_to_token:
+        return text
+    exact: dict[str, str] = {}
+    loose: dict[str, str] = {}
+    for name, token in name_to_token.items():
+        clean = str(name or "").strip()
+        if not clean or not token:
+            continue
+        if len(clean) < 3 or clean.lower() in _EVERYDAY_WORD_NAMES:
+            exact.setdefault(clean, token)
+            exact.setdefault(clean[:1].upper() + clean[1:], token)
+        else:
+            loose.setdefault(clean.lower(), token)
+    if not exact and not loose:
+        return text
+    parts = [(n, re.escape(n)) for n in exact]
+    parts += [(n, "(?i:" + re.escape(n) + ")") for n in loose]
+    parts.sort(key=lambda p: len(p[0]), reverse=True)
+    pattern = r"(?<!\w)(?:" + "|".join(p[1] for p in parts) + r")(?!\w)"
+
+    def _swap(match):
+        found = match.group(0)
+        return exact.get(found) or loose.get(found.lower()) or found
+
+    return re.sub(pattern, _swap, text)
+
+
+def restore_names(text, token_to_name: dict) -> str:
+    """Put real names back over whole tokens, in one pass.
+
+    *token_to_name* is keyed by lower-case token. HERO_1 never matches inside
+    HERO_10, and a restored name is never read again as a token.
+    """
+    if not text:
+        return text or ""
+    if not token_to_name:
+        return text
+    return NAME_TOKEN_RE.sub(
+        lambda m: token_to_name.get(m.group(0).lower(), m.group(0)), text
+    )
+
+
+# ============================================================================
 # Prior-adventures recall
 # ============================================================================
 # How many recent stories to scan when assembling a character's prior-themes
